@@ -1,6 +1,6 @@
 {
   "name": "blueticks",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Official Node/TypeScript client for the Blueticks API.",
   "keywords": ["blueticks", "whatsapp", "api", "sdk"],
   "homepage": "https://blueticks.co",
@@ -20,6 +20,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./webhooks": {
+      "types": "./dist/webhooks.d.ts",
+      "import": "./dist/webhooks.js",
+      "require": "./dist/webhooks.cjs"
     }
   },
   "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
