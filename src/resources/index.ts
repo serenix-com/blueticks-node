@@ -1,2 +1,2 @@
-// src/resources/index.ts — STUB
-export {};
+export { AccountResource } from "./account";
+export { PingResource } from "./ping";
