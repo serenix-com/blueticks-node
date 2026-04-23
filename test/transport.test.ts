@@ -131,6 +131,33 @@ describe("Transport", () => {
     );
   });
 
+  it("does not retry when caller aborts", async () => {
+    const controller = new AbortController();
+    let callCount = 0;
+    const t = makeTransport(() => {
+      callCount++;
+      // Simulate abort firing before fetch can resolve
+      return new Promise<Response>((_, reject) => {
+        controller.signal.addEventListener("abort", () => {
+          const err = new Error("aborted");
+          err.name = "AbortError";
+          reject(err);
+        }, { once: true });
+      });
+    }, { maxRetries: 3 });
+
+    // Trigger abort synchronously before awaiting
+    queueMicrotask(() => controller.abort());
+    const err = await t.request({
+      method: "GET",
+      path: "/v1/ping",
+      schema: OkSchema,
+      signal: controller.signal,
+    }).catch((e) => e);
+    expect((err as Error).name).toBe("AbortError");
+    expect(callCount).toBe(1); // no retries
+  });
+
   it("appends userAgent suffix", async () => {
     let captured = "";
     const t = new Transport({

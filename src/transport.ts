@@ -80,7 +80,10 @@ export class Transport {
       try {
         response = await this.fetchFn(url, { ...init, signal });
       } catch (exc) {
-        clearTimeout(timeoutId);
+        // Do not retry if the caller deliberately aborted.
+        if (opts.signal?.aborted) {
+          throw exc as Error;
+        }
         if (attempt < this.maxRetries) {
           await sleep(backoff(attempt, null));
           attempt++;
