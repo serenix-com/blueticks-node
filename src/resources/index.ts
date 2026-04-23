@@ -13,3 +13,4 @@ export {
   type UpdateAudienceParams,
   type UpdateContactParams,
 } from "./audiences";
+export { CampaignsResource, type CreateCampaignParams } from "./campaigns";
