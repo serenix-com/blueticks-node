@@ -4,6 +4,7 @@ import { BluetickError } from "./errors";
 import { VERSION } from "./version";
 import { AccountResource } from "./resources/account";
 import { MessagesResource } from "./resources/messages";
+import { WebhooksResource } from "./resources/webhooks";
 import type { Ping } from "./types/ping";
 
 const DEFAULT_BASE_URL = "https://api.blueticks.co";
@@ -22,6 +23,7 @@ export interface BluetickOptions {
 export class Blueticks {
   readonly account: AccountResource;
   readonly messages: MessagesResource;
+  readonly webhooks: WebhooksResource;
   private readonly transport: Transport;
   readonly baseUrl: string;
 
@@ -49,6 +51,7 @@ export class Blueticks {
 
     this.account = new AccountResource(this);
     this.messages = new MessagesResource(this);
+    this.webhooks = new WebhooksResource(this);
   }
 
   async ping(opts: { signal?: AbortSignal } = {}): Promise<Ping> {
