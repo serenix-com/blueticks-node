@@ -1,2 +1,9 @@
-// src/types/ping.ts — STUB type referenced by client.ts
-export type Ping = { account_id: string; key_prefix: string; scopes: string[] };
+import { z } from "zod";
+
+export const PingSchema = z.object({
+  account_id: z.string(),
+  key_prefix: z.string(),
+  scopes: z.array(z.string()),
+});
+
+export type Ping = z.infer<typeof PingSchema>;

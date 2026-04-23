@@ -1,2 +1,10 @@
-// src/types/account.ts — STUB type
-export type Account = { id: string; name: string; timezone: string | null; created_at: string };
+import { z } from "zod";
+
+export const AccountSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  timezone: z.string().nullable(),
+  created_at: z.string().datetime(),
+});
+
+export type Account = z.infer<typeof AccountSchema>;
