@@ -17,6 +17,12 @@ the current contents of the regenerated paths — nothing else.
   - Update return-type annotations on helper methods (e.g., `Promise<Ping>`).
   - Keep `import type { ... } from "./types/<name>"` lines in sync.
   - Add/remove static `import { <Resource>Resource } from "./resources/<name>"` lines.
+  - The `ping()` convenience method uses a dynamic `await import("./resources/ping")` call
+    inside the method body to keep `PingResource` out of the eager bundle. Preserve this
+    pattern: do NOT convert it to a static top-level import. All other resource attachments
+    (like `this.account = new AccountResource(this)`) DO use static top-level imports. Use
+    the lazy form only for helper methods whose target resource is not also attached as a
+    `this.<name>` property — i.e., the lazy form is reserved for one-off delegate methods.
   Do NOT touch: constructor body (apiKey/baseUrl/transport wiring), `request<T>`, env-var logic.
 
 ### You MUST NOT touch:
@@ -35,13 +41,24 @@ One file per response schema at `src/types/<kebab-name>.ts`. Each file exports:
 - A Zod schema (named `<Name>Schema`, e.g., `AccountSchema`).
 - An inferred TS type (named `<Name>`, e.g., `Account`) via `z.infer<typeof <Name>Schema>`.
 
+### Unknown-field behavior
+
+Use Zod's default `.object()` behavior for response schemas — unknown keys are
+silently stripped. This matches the Python SDK's `ConfigDict(extra="ignore")`.
+Do NOT call `.strict()` (rejects unknown keys → users with newer backend + older
+SDK get ValidationError instead of graceful degradation) or `.passthrough()`
+(preserves unknown keys but they are not in the inferred TS type, forcing callers
+to cast).
+
 ### Type mapping
 
 | OpenAPI | Zod | Inferred TS |
 | --- | --- | --- |
 | `string` | `z.string()` | `string` |
-| `string, format: date-time` | `z.string().datetime()` | `string` |
+| `string, format: date-time` | `z.string().datetime({ offset: true })` | `string` |
 | `string, format: uuid` | `z.string().uuid()` | `string` |
+| `string, format: email` | `z.string().email()` | `string` |
+| `string, format: uri` | `z.string().url()` | `string` |
 | `integer` | `z.number().int()` | `number` |
 | `number` | `z.number()` | `number` |
 | `boolean` | `z.boolean()` | `boolean` |
@@ -49,6 +66,11 @@ One file per response schema at `src/types/<kebab-name>.ts`. Each file exports:
 | `object` (inline) | nested `z.object({...})` | nested interface |
 | `nullable: true` | `<T>.nullable()` | `T \| null` |
 | `enum: [a, b, c]` | `z.enum(["a","b","c"])` | `'a' \| 'b' \| 'c'` |
+
+**Datetime offset:** The `{ offset: true }` option makes the schema accept both `Z`
+(UTC) and explicit offset forms (`+HH:MM`). This protects against backend changes
+that emit timestamps with a user's local timezone. Do NOT omit the option — it is
+necessary for forward-compatibility.
 
 **Field names are snake_case** — matches the wire format. The SDK NEVER renames server fields. Only SDK-internal types (errors, constructor options) use camelCase.
 
@@ -73,7 +95,7 @@ export const AccountSchema = z.object({
   id: z.string(),
   name: z.string(),
   timezone: z.string().nullable(),
-  created_at: z.string().datetime(),
+  created_at: z.string().datetime({ offset: true }),
 });
 
 export type Account = z.infer<typeof AccountSchema>;
