@@ -1,5 +1,6 @@
 export { AccountSchema, type Account } from "./account";
 export { PingSchema, type Ping } from "./ping";
+export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
 export {
   MessageSchema,
   MessageStatusSchema,

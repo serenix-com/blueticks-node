@@ -8,6 +8,7 @@ import {
   type Contact,
   type AppendContactsResult,
 } from "../types/audiences";
+import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 export interface ContactInput {
   to: string;
@@ -29,7 +30,7 @@ export interface UpdateContactParams {
 }
 
 const VoidSchema = z.undefined();
-const AudienceListSchema = z.array(AudienceSchema);
+const AudiencePageSchema = pageSchema(AudienceSchema);
 
 export class AudiencesResource extends BaseResource {
   /** Create an audience, optionally seeded with contacts. */
@@ -43,13 +44,19 @@ export class AudiencesResource extends BaseResource {
     });
   }
 
-  /** List all audiences. */
-  async list(opts: { signal?: AbortSignal } = {}): Promise<Audience[]> {
+  /**
+   * List audiences, newest first. Cursor-paginated.
+   */
+  async list(
+    params: ListParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Audience>> {
+    const { signal, ...listParams } = params;
     return this.client.request({
       method: "GET",
       path: "/v1/audiences",
-      schema: AudienceListSchema,
-      signal: opts.signal,
+      query: buildListQuery(listParams),
+      schema: AudiencePageSchema,
+      signal,
     });
   }
 
