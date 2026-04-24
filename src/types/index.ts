@@ -33,3 +33,20 @@ export {
   type Campaign,
   type CampaignStatus,
 } from "./campaigns";
+export {
+  ChatSchema, ChatMessageSchema, ChatMediaSchema, ParticipantSchema,
+  type Chat, type ChatMessage, type ChatMedia, type Participant,
+} from "./chats";
+export { GroupSchema, type Group } from "./groups";
+export {
+  WhatsAppContactSchema, ProfilePictureSchema,
+  type WhatsAppContact, type ProfilePicture,
+} from "./contacts";
+export {
+  EngineStatusSchema, WhatsAppMeSchema,
+  type EngineStatus, type WhatsAppMe,
+} from "./engines";
+export {
+  PhoneValidationSchema, LinkPreviewSchema,
+  type PhoneValidation, type LinkPreview,
+} from "./utils";

@@ -7,6 +7,11 @@ import { MessagesResource } from "./resources/messages";
 import { WebhooksResource } from "./resources/webhooks";
 import { AudiencesResource } from "./resources/audiences";
 import { CampaignsResource } from "./resources/campaigns";
+import { ChatsResource } from "./resources/chats";
+import { ContactsResource } from "./resources/contacts";
+import { EnginesResource } from "./resources/engines";
+import { GroupsResource } from "./resources/groups";
+import { UtilsResource } from "./resources/utils";
 import type { Ping } from "./types/ping";
 
 const DEFAULT_BASE_URL = "https://api.blueticks.co";
@@ -28,6 +33,11 @@ export class Blueticks {
   readonly webhooks: WebhooksResource;
   readonly audiences: AudiencesResource;
   readonly campaigns: CampaignsResource;
+  readonly chats: ChatsResource;
+  readonly contacts: ContactsResource;
+  readonly engines: EnginesResource;
+  readonly groups: GroupsResource;
+  readonly utils: UtilsResource;
   private readonly transport: Transport;
   readonly baseUrl: string;
 
@@ -58,6 +68,11 @@ export class Blueticks {
     this.webhooks = new WebhooksResource(this);
     this.audiences = new AudiencesResource(this);
     this.campaigns = new CampaignsResource(this);
+    this.chats = new ChatsResource(this);
+    this.contacts = new ContactsResource(this);
+    this.engines = new EnginesResource(this);
+    this.groups = new GroupsResource(this);
+    this.utils = new UtilsResource(this);
   }
 
   async ping(opts: { signal?: AbortSignal } = {}): Promise<Ping> {
