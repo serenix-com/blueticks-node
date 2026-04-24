@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import { CampaignSchema, type Campaign } from "../types/campaigns";
+import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 export interface CreateCampaignParams {
   name: string;
@@ -12,7 +13,7 @@ export interface CreateCampaignParams {
   on_missing_variable?: "fail" | "skip";
 }
 
-const CampaignListSchema = z.array(CampaignSchema);
+const CampaignPageSchema = pageSchema(CampaignSchema);
 
 export class CampaignsResource extends BaseResource {
   /** Create a campaign targeting an audience. */
@@ -26,13 +27,19 @@ export class CampaignsResource extends BaseResource {
     });
   }
 
-  /** List all campaigns. */
-  async list(opts: { signal?: AbortSignal } = {}): Promise<Campaign[]> {
+  /**
+   * List campaigns, newest first. Cursor-paginated.
+   */
+  async list(
+    params: ListParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Campaign>> {
+    const { signal, ...listParams } = params;
     return this.client.request({
       method: "GET",
       path: "/v1/campaigns",
-      schema: CampaignListSchema,
-      signal: opts.signal,
+      query: buildListQuery(listParams),
+      schema: CampaignPageSchema,
+      signal,
     });
   }
 

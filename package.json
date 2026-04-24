@@ -1,8 +1,13 @@
 {
   "name": "blueticks",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Official Node/TypeScript client for the Blueticks API.",
-  "keywords": ["blueticks", "whatsapp", "api", "sdk"],
+  "keywords": [
+    "blueticks",
+    "whatsapp",
+    "api",
+    "sdk"
+  ],
   "homepage": "https://blueticks.co",
   "bugs": "https://github.com/serenix-com/blueticks-node/issues",
   "repository": {
@@ -27,7 +32,12 @@
       "require": "./dist/webhooks.cjs"
     }
   },
-  "files": ["dist", "README.md", "LICENSE", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "engines": {
     "node": ">=18"
   },

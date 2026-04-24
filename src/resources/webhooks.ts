@@ -6,6 +6,7 @@ import {
   type Webhook,
   type WebhookCreateResult,
 } from "../types/webhooks";
+import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 export interface CreateWebhookParams {
   url: string;
@@ -21,7 +22,7 @@ export interface UpdateWebhookParams {
 }
 
 const VoidSchema = z.undefined();
-const WebhookListSchema = z.array(WebhookSchema);
+const WebhookPageSchema = pageSchema(WebhookSchema);
 
 export class WebhooksResource extends BaseResource {
   /** Register a new webhook endpoint. The returned object includes the signing `secret`. */
@@ -35,13 +36,26 @@ export class WebhooksResource extends BaseResource {
     });
   }
 
-  /** List all registered webhooks. */
-  async list(opts: { signal?: AbortSignal } = {}): Promise<Webhook[]> {
+  /**
+   * List webhooks, newest first. Cursor-paginated.
+   *
+   * @example
+   *   const page = await bt.webhooks.list({ limit: 100 });
+   *   for (const wh of page.data) { ... }
+   *   if (page.has_more) {
+   *     const next = await bt.webhooks.list({ cursor: page.next_cursor });
+   *   }
+   */
+  async list(
+    params: ListParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Webhook>> {
+    const { signal, ...listParams } = params;
     return this.client.request({
       method: "GET",
       path: "/v1/webhooks",
-      schema: WebhookListSchema,
-      signal: opts.signal,
+      query: buildListQuery(listParams),
+      schema: WebhookPageSchema,
+      signal,
     });
   }
 
