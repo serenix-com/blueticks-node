@@ -5,6 +5,7 @@ export const MessageStatusSchema = z.enum([
   "queued",
   "sending",
   "delivered",
+  "read",
   "failed",
 ]);
 
