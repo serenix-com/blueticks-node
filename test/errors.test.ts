@@ -81,6 +81,44 @@ describe("errorFromEnvelope", () => {
     expect(e.message.endsWith("...")).toBe(true);
   });
 
+  it("attaches details from envelope when present", () => {
+    const e = errorFromEnvelope({
+      statusCode: 400,
+      body: {
+        error: {
+          code: "invalid_request",
+          message: "contacts.0.to: Invalid",
+          request_id: "r",
+          details: [
+            { path: "contacts.0.to", code: "invalid_string", message: "must be E.164" },
+          ],
+        },
+      },
+      response: null,
+    });
+    expect(e.details).toEqual([
+      { path: "contacts.0.to", code: "invalid_string", message: "must be E.164" },
+    ]);
+  });
+
+  it("leaves details=null when the envelope has none", () => {
+    const e = errorFromEnvelope({
+      statusCode: 400,
+      body: { error: { code: "invalid_request", message: "x", request_id: "r" } },
+      response: null,
+    });
+    expect(e.details).toBeNull();
+  });
+
+  it("ignores non-array details payloads", () => {
+    const e = errorFromEnvelope({
+      statusCode: 400,
+      body: { error: { code: "invalid_request", message: "x", request_id: "r", details: "oops" } },
+      response: null,
+    });
+    expect(e.details).toBeNull();
+  });
+
   it("attaches retryAfter to RateLimitError", () => {
     const e = errorFromEnvelope({
       statusCode: 429,

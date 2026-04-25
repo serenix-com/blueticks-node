@@ -1,11 +1,18 @@
 export { ZodError as ValidationError } from "zod";
 
+export interface ErrorDetail {
+  path: string;
+  code: string;
+  message: string;
+}
+
 export interface BluetickErrorInit {
   statusCode?: number | null;
   code?: string | null;
   message?: string;
   requestId?: string | null;
   response?: Response | null;
+  details?: ErrorDetail[] | null;
   /** @internal — when true, `message` is used verbatim without the standard rendering wrapper. */
   _rawMessage?: boolean;
 }
@@ -15,6 +22,7 @@ export class BluetickError extends Error {
   readonly code: string | null;
   readonly requestId: string | null;
   readonly response: Response | null;
+  readonly details: ErrorDetail[] | null;
 
   constructor(init: BluetickErrorInit = {}) {
     const statusCode = init.statusCode ?? null;
@@ -30,6 +38,7 @@ export class BluetickError extends Error {
     this.code = code;
     this.requestId = requestId;
     this.response = init.response ?? null;
+    this.details = init.details ?? null;
   }
 }
 
@@ -75,6 +84,22 @@ export interface ErrorEnvelopeInput {
   retryAfter?: number | null;
 }
 
+function parseDetails(raw: unknown): ErrorDetail[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out: ErrorDetail[] = [];
+  for (const item of raw) {
+    if (item && typeof item === "object") {
+      const o = item as { path?: unknown; code?: unknown; message?: unknown };
+      out.push({
+        path: typeof o.path === "string" ? o.path : "",
+        code: typeof o.code === "string" ? o.code : "",
+        message: typeof o.message === "string" ? o.message : "",
+      });
+    }
+  }
+  return out.length > 0 ? out : null;
+}
+
 export function errorFromEnvelope(input: ErrorEnvelopeInput): BluetickError {
   const Cls = classForStatus(input.statusCode);
 
@@ -85,7 +110,9 @@ export function errorFromEnvelope(input: ErrorEnvelopeInput): BluetickError {
     typeof (input.body as { error: unknown }).error === "object" &&
     (input.body as { error: unknown }).error !== null
   ) {
-    const env = (input.body as { error: { code?: unknown; message?: unknown; request_id?: unknown } }).error;
+    const env = (input.body as {
+      error: { code?: unknown; message?: unknown; request_id?: unknown; details?: unknown };
+    }).error;
     if (typeof env.code === "string") {
       const init: RateLimitErrorInit = {
         statusCode: input.statusCode,
@@ -94,6 +121,7 @@ export function errorFromEnvelope(input: ErrorEnvelopeInput): BluetickError {
         requestId: typeof env.request_id === "string" ? env.request_id : null,
         response: input.response,
         retryAfter: input.retryAfter ?? null,
+        details: parseDetails(env.details),
       };
       return new Cls(init) as BluetickError;
     }
