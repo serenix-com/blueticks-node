@@ -21,7 +21,8 @@ export interface UpdateWebhookParams {
   status?: "enabled" | "disabled";
 }
 
-const VoidSchema = z.undefined();
+// Tolerate empty-body OR deleted-resource-ref response shape from backend.
+const VoidSchema = z.unknown().optional();
 const WebhookPageSchema = pageSchema(WebhookSchema);
 
 export class WebhooksResource extends BaseResource {

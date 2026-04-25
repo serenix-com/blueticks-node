@@ -29,7 +29,9 @@ export interface UpdateContactParams {
   variables?: Record<string, string>;
 }
 
-const VoidSchema = z.undefined();
+// Backend may return either an empty body or the deleted resource ref;
+// tolerate both to avoid spurious ValidationError for a successful delete.
+const VoidSchema = z.unknown().optional();
 const AudiencePageSchema = pageSchema(AudienceSchema);
 
 export class AudiencesResource extends BaseResource {
