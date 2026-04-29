@@ -3,6 +3,23 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [3.2.0] — 2026-04-29
+
+### Added
+- `client.chats.listMessages()` now accepts `message_types?: MessageType[]` to
+  filter the response to specific message kinds (e.g. `["document"]` for PDFs,
+  `["image"]` for photos). Server-side default-excludes system events
+  (`gp2`, `revoked`, `newsletter_notification`) when omitted.
+- `MessageType` type — string-union of the 13 WhatsApp message kinds.
+- `ChatMessage.caption` and `ChatMessage.filename` — surfaced for media
+  messages so document listings are self-describing without an extra
+  media-fetch round-trip.
+
+### Fixed
+- Stale list-test mocks (`audiences`, `campaigns`, `webhooks`) that were
+  asserting on bare-array responses now use the cursor-paginated
+  `Page<T>` envelope. Behaviour-only test fix; runtime unchanged.
+
 ## [1.1.0] — 2026-04-23
 
 ### Added
