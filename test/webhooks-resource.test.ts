@@ -32,15 +32,20 @@ describe("client.webhooks", () => {
     expect(wh.id).toBe("wh_1");
   });
 
-  it("list returns typed Webhook[]", async () => {
+  it("list returns paginated Page<Webhook>", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/webhooks");
-      return jsonResponse(200, [baseWebhook(), baseWebhook({ id: "wh_2" })]);
+      return jsonResponse(200, {
+        data: [baseWebhook(), baseWebhook({ id: "wh_2" })],
+        has_more: false,
+        next_cursor: null,
+      });
     });
     const result = await c.webhooks.list();
-    expect(result).toHaveLength(2);
-    expect(result[0]!.id).toBe("wh_1");
+    expect(result.data).toHaveLength(2);
+    expect(result.data[0]!.id).toBe("wh_1");
+    expect(result.has_more).toBe(false);
   });
 
   it("get by id", async () => {

@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import { CampaignSchema, type Campaign } from "../types/campaigns";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";

@@ -34,8 +34,8 @@ export {
   type CampaignStatus,
 } from "./campaigns";
 export {
-  ChatSchema, ChatMessageSchema, ChatMediaSchema, ParticipantSchema,
-  type Chat, type ChatMessage, type ChatMedia, type Participant,
+  ChatSchema, ChatMessageSchema, ChatMediaSchema, ParticipantSchema, MessageTypeSchema,
+  type Chat, type ChatMessage, type ChatMedia, type Participant, type MessageType,
 } from "./chats";
 export { GroupSchema, type Group } from "./groups";
 export {

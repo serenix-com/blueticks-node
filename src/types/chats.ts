@@ -16,6 +16,23 @@ export const ParticipantSchema = z.object({
 });
 export type Participant = z.infer<typeof ParticipantSchema>;
 
+export const MessageTypeSchema = z.enum([
+  "chat",
+  "image",
+  "video",
+  "document",
+  "audio",
+  "ptt",
+  "sticker",
+  "gif",
+  "ptv",
+  "poll_creation",
+  "location",
+  "vcard",
+  "revoked",
+]);
+export type MessageType = z.infer<typeof MessageTypeSchema>;
+
 export const ChatMessageSchema = z.object({
   key: z.string(),
   chat_id: z.string(),
@@ -26,6 +43,8 @@ export const ChatMessageSchema = z.object({
   from_me: z.boolean(),
   ack: z.number().int().nullable(),
   media_url: z.string().nullable(),
+  caption: z.string().nullable(),
+  filename: z.string().nullable(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 

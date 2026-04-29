@@ -9,6 +9,7 @@ import {
   type ChatMessage,
   type ChatMedia,
   type Participant,
+  type MessageType,
 } from "../types/chats";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
@@ -26,6 +27,7 @@ export interface ListMessagesParams extends ListParams {
   query?: string;
   since?: string;
   until?: string;
+  message_types?: MessageType[];
 }
 
 export class ChatsResource extends BaseResource {
@@ -93,12 +95,16 @@ export class ChatsResource extends BaseResource {
     chatId: string,
     params: ListMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<ChatMessage>> {
-    const { signal, mode, query, since, until, ...rest } = params;
+    const { signal, mode, query, since, until, message_types, ...rest } = params;
     const q = buildListQuery(rest);
     q.mode = mode ?? "latest";
     if (query !== undefined) q.query = query;
     if (since !== undefined) q.since = since;
     if (until !== undefined) q.until = until;
+    if (message_types !== undefined && message_types.length > 0) {
+      // Server accepts comma-separated form for OpenAPI `style: form, explode: false`.
+      q.message_types = message_types.join(",");
+    }
     return this.client.request({
       method: "GET",
       path: `/v1/chats/${encodeURIComponent(chatId)}/messages`,

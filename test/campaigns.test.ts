@@ -45,13 +45,18 @@ describe("client.campaigns", () => {
     expect(r.id).toBe("cmp_1");
   });
 
-  it("list returns Campaign[]", async () => {
+  it("list returns paginated Page<Campaign>", async () => {
     const c = mkClient((req) => {
       expect(new URL(req.url).pathname).toBe("/v1/campaigns");
-      return jsonResponse(200, [baseCampaign()]);
+      return jsonResponse(200, {
+        data: [baseCampaign()],
+        has_more: false,
+        next_cursor: null,
+      });
     });
     const r = await c.campaigns.list();
-    expect(r).toHaveLength(1);
+    expect(r.data).toHaveLength(1);
+    expect(r.has_more).toBe(false);
   });
 
   it("get fetches by id", async () => {

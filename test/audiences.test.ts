@@ -39,13 +39,19 @@ describe("client.audiences", () => {
     expect(a.id).toBe("aud_1");
   });
 
-  it("list returns array", async () => {
+  it("list returns paginated Page<Audience>", async () => {
     const c = mkClient((req) => {
       expect(new URL(req.url).pathname).toBe("/v1/audiences");
-      return jsonResponse(200, [baseAudience(), baseAudience({ id: "aud_2" })]);
+      return jsonResponse(200, {
+        data: [baseAudience(), baseAudience({ id: "aud_2" })],
+        has_more: false,
+        next_cursor: null,
+      });
     });
     const result = await c.audiences.list();
-    expect(result).toHaveLength(2);
+    expect(result.data).toHaveLength(2);
+    expect(result.has_more).toBe(false);
+    expect(result.next_cursor).toBeNull();
   });
 
   it("get with page passes ?page=N query", async () => {
