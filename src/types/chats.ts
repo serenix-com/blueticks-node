@@ -48,10 +48,24 @@ export const ChatMessageSchema = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const MediaUnavailableReasonSchema = z.enum([
+  "expired",
+  "fetching",
+  "error",
+  "no_media",
+]);
+export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema>;
+
 export const ChatMediaSchema = z.object({
   url: z.string().nullable(),
   mimetype: z.string().nullable(),
   filename: z.string().nullable(),
   data_base64: z.string().nullable(),
+  // false when WA returned a preview JPEG instead of the original (#113 —
+  // own-sent newsletter media). null/absent when bytes are the genuine
+  // original from the sender.
+  original_quality: z.boolean().nullable(),
+  // Reason the bytes couldn't be retrieved. null/absent on success.
+  media_unavailable: MediaUnavailableReasonSchema.nullable(),
 });
 export type ChatMedia = z.infer<typeof ChatMediaSchema>;
