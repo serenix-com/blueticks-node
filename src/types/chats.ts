@@ -51,6 +51,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export const MediaUnavailableReasonSchema = z.enum([
   "expired",
   "fetching",
+  "awaiting_sender",
   "error",
   "no_media",
 ]);

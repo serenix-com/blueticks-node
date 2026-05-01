@@ -37,7 +37,11 @@ export {
   ChatSchema, ChatMessageSchema, ChatMediaSchema, ParticipantSchema, MessageTypeSchema, MediaUnavailableReasonSchema,
   type Chat, type ChatMessage, type ChatMedia, type Participant, type MessageType, type MediaUnavailableReason,
 } from "./chats";
-export { GroupSchema, type Group } from "./groups";
+export {
+  GroupSchema, GroupParticipantSchema,
+  type Group, type GroupParticipant,
+} from "./groups";
+export { ScheduledMessageSchema, type ScheduledMessage } from "./scheduled-messages";
 export {
   WhatsAppContactSchema, ProfilePictureSchema,
   type WhatsAppContact, type ProfilePicture,

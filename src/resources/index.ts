@@ -14,3 +14,7 @@ export {
   type UpdateContactParams,
 } from "./audiences";
 export { CampaignsResource, type CreateCampaignParams } from "./campaigns";
+export {
+  ScheduledMessagesResource,
+  type UpdateScheduledMessageParams,
+} from "./scheduled-messages";
