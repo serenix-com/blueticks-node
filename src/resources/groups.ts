@@ -2,7 +2,7 @@ import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import { GroupSchema, type Group } from "../types/groups";
 
-const OkSchema = z.object({ ok: z.boolean() }).passthrough();
+const VoidSchema = z.undefined();
 
 export interface CreateGroupParams {
   name: string;
@@ -12,6 +12,9 @@ export interface UpdateGroupParams {
   name?: string;
   settings?: { announce?: boolean; restrict?: boolean };
 }
+export interface AddMemberParams {
+  chat_id: string;
+}
 export interface SetPictureParams {
   file_data_url: string;
   file_name?: string;
@@ -19,7 +22,11 @@ export interface SetPictureParams {
 }
 
 export class GroupsResource extends BaseResource {
-  /** Create a new group with an initial participant list. */
+  /**
+   * Create group.
+   *
+   * Create a WhatsApp group with the given name and initial participants. Requires `groups:write`.
+   */
   async create(body: CreateGroupParams, opts: { signal?: AbortSignal } = {}): Promise<Group> {
     return this.client.request({
       method: "POST",
@@ -30,7 +37,11 @@ export class GroupsResource extends BaseResource {
     });
   }
 
-  /** Retrieve group metadata by JID. */
+  /**
+   * Retrieve group.
+   *
+   * Fetch group metadata by JID. Requires `groups:read`.
+   */
   async get(groupId: string, opts: { signal?: AbortSignal } = {}): Promise<Group> {
     return this.client.request({
       method: "GET",
@@ -40,79 +51,127 @@ export class GroupsResource extends BaseResource {
     });
   }
 
-  /** Rename the group and/or update admin-only settings. */
+  /**
+   * Update group.
+   *
+   * Update group metadata. Provide at least one of `name` or `settings`. Requires `groups:write`.
+   */
   async update(
     groupId: string,
     body: UpdateGroupParams,
     opts: { signal?: AbortSignal } = {},
-  ) {
+  ): Promise<Group> {
     return this.client.request({
       method: "PATCH",
       path: `/v1/groups/${encodeURIComponent(groupId)}`,
       body,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Invite a contact to the group. */
-  async addMember(groupId: string, body: { chat_id: string }, opts: { signal?: AbortSignal } = {}) {
+  /**
+   * Add member to group.
+   *
+   * Add a participant to the group by chat_id (JID) or +E.164 phone. Requires `groups:write`.
+   */
+  async addMember(
+    groupId: string,
+    body: AddMemberParams,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "POST",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members`,
       body,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Remove a participant from the group. */
-  async removeMember(groupId: string, chatId: string, opts: { signal?: AbortSignal } = {}) {
+  /**
+   * Remove member from group.
+   *
+   * Remove a participant from the group. Requires `groups:write`.
+   */
+  async removeMember(
+    groupId: string,
+    chatId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "DELETE",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}`,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Grant admin rights to a participant. */
-  async promoteAdmin(groupId: string, chatId: string, opts: { signal?: AbortSignal } = {}) {
+  /**
+   * Promote member to admin.
+   *
+   * Grant admin privileges to a group member. Requires `groups:write`.
+   */
+  async promoteAdmin(
+    groupId: string,
+    chatId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "POST",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}/admin`,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Revoke admin rights from a participant. */
-  async demoteAdmin(groupId: string, chatId: string, opts: { signal?: AbortSignal } = {}) {
+  /**
+   * Demote admin to member.
+   *
+   * Revoke admin privileges from a group member. Requires `groups:write`.
+   */
+  async demoteAdmin(
+    groupId: string,
+    chatId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "DELETE",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}/admin`,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Upload a new group avatar (base64 data URL). */
-  async setPicture(groupId: string, body: SetPictureParams, opts: { signal?: AbortSignal } = {}) {
+  /**
+   * Set group picture.
+   *
+   * Replace the group picture. Body is a base64 data URL (PNG/JPEG, ≤20 MiB). Requires `groups:write`.
+   */
+  async setPicture(
+    groupId: string,
+    body: SetPictureParams,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "PUT",
       path: `/v1/groups/${encodeURIComponent(groupId)}/picture`,
       body,
-      schema: OkSchema,
+      schema: GroupSchema,
       signal: opts.signal,
     });
   }
 
-  /** Leave the group (as the authenticated user). */
-  async leave(groupId: string, opts: { signal?: AbortSignal } = {}) {
-    return this.client.request({
+  /**
+   * Leave group.
+   *
+   * Leave the group as the authenticated identity. Idempotent — succeeds with 204 even if already not a member. Requires `groups:write`.
+   */
+  async leave(groupId: string, opts: { signal?: AbortSignal } = {}): Promise<void> {
+    await this.client.request({
       method: "DELETE",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/me`,
-      schema: OkSchema,
+      schema: VoidSchema,
       signal: opts.signal,
     });
   }

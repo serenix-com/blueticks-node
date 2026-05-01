@@ -16,6 +16,63 @@ export const ParticipantSchema = z.object({
 });
 export type Participant = z.infer<typeof ParticipantSchema>;
 
+/**
+ * Cursor-paginated participant list returned by
+ * `GET /v1/chats/{chat_id}/participants`. For DMs the list contains a single
+ * counterparty; for group chats it is a paginated slice of members.
+ */
+export const ParticipantListSchema = z.object({
+  data: z.array(ParticipantSchema),
+  has_more: z.boolean(),
+  next_cursor: z.string().nullable(),
+});
+export type ParticipantList = z.infer<typeof ParticipantListSchema>;
+
+/** Generic `{ ok: true }` envelope returned by side-effect endpoints. */
+export const OkResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type OkResponse = z.infer<typeof OkResponseSchema>;
+
+/** `{ chat_id }` envelope returned by `POST /v1/chats/{chat_id}/open`. */
+export const ChatRefSchema = z.object({
+  chat_id: z.string(),
+});
+export type ChatRef = z.infer<typeof ChatRefSchema>;
+
+/**
+ * Response of `GET /v1/chats/{chat_id}/messages/{key}/ack`. WhatsApp ack
+ * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
+ * when no engine response.
+ */
+export const MessageAckSchema = z.object({
+  ack: z.number().int().nullable(),
+});
+export type MessageAck = z.infer<typeof MessageAckSchema>;
+
+/** Response of `POST /v1/chats/{chat_id}/messages/load_older`. */
+export const LoadOlderMessagesResponseSchema = z.object({
+  total_messages: z.number().int().nullable(),
+  added: z.number().int().nullable(),
+  can_load_more: z.boolean(),
+});
+export type LoadOlderMessagesResponse = z.infer<typeof LoadOlderMessagesResponseSchema>;
+
+/** Response of `GET /v1/chats/{chat_id}/messages/{key}/media_url`. */
+export const MediaUrlResponseSchema = z.object({
+  url: z.string().nullable(),
+});
+export type MediaUrlResponse = z.infer<typeof MediaUrlResponseSchema>;
+
+/**
+ * Response of `POST /v1/chats/message_acks`. Each item in `data` is an
+ * unstructured ack record (server-defined; `additionalProperties: true`).
+ */
+export const BatchMessageAcksResponseSchema = z.object({
+  data: z.array(z.record(z.unknown())),
+});
+export type BatchMessageAcksResponse = z.infer<typeof BatchMessageAcksResponseSchema>;
+
 export const MessageTypeSchema = z.enum([
   "chat",
   "image",

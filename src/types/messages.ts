@@ -18,12 +18,12 @@ export const MessageSchema = z.object({
   text: z.string().nullable(),
   media_url: z.string().nullable(),
   status: MessageStatusSchema,
-  send_at: z.string().nullable(),
-  created_at: z.string(),
-  sent_at: z.string().nullable(),
-  delivered_at: z.string().nullable(),
-  read_at: z.string().nullable(),
-  failed_at: z.string().nullable(),
+  send_at: z.string().datetime({ offset: true }).nullable(),
+  created_at: z.string().datetime({ offset: true }),
+  sent_at: z.string().datetime({ offset: true }).nullable(),
+  delivered_at: z.string().datetime({ offset: true }).nullable(),
+  read_at: z.string().datetime({ offset: true }).nullable(),
+  failed_at: z.string().datetime({ offset: true }).nullable(),
   failure_reason: z.string().nullable(),
 });
 

@@ -4,7 +4,7 @@ export const ContactSchema = z.object({
   id: z.string(),
   to: z.string(),
   variables: z.record(z.string()),
-  added_at: z.string(),
+  added_at: z.string().datetime({ offset: true }),
 });
 
 export type Contact = z.infer<typeof ContactSchema>;
@@ -12,8 +12,9 @@ export type Contact = z.infer<typeof ContactSchema>;
 export const AudienceSchema = z.object({
   id: z.string(),
   name: z.string(),
-  contact_count: z.number(),
-  created_at: z.string(),
+  contact_count: z.number().int(),
+  created_at: z.string().datetime({ offset: true }),
+  // Hand-tuned: backend may include nested contacts paging when ?page= is set.
   contacts: z.array(ContactSchema).optional(),
   page: z.number().optional(),
   has_more: z.boolean().optional(),

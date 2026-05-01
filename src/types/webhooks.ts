@@ -27,7 +27,7 @@ export const WebhookSchema = z.object({
   events: z.array(z.string()),
   description: z.string().nullable(),
   status: WebhookStatusSchema,
-  created_at: z.string(),
+  created_at: z.string().datetime({ offset: true }),
 });
 
 export type Webhook = z.infer<typeof WebhookSchema>;

@@ -1,6 +1,6 @@
 {
   "name": "blueticks",
-  "version": "3.4.0",
+  "version": "3.4.1",
   "description": "Official Node/TypeScript client for the Blueticks API.",
   "keywords": [
     "blueticks",

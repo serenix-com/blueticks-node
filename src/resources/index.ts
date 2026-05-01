@@ -15,6 +15,21 @@ export {
 } from "./audiences";
 export { CampaignsResource, type CreateCampaignParams } from "./campaigns";
 export {
+  ChatsResource,
+  type ListChatsParams,
+  type ListMessagesParams,
+} from "./chats";
+export { ContactsResource } from "./contacts";
+export { EnginesResource } from "./engines";
+export {
+  GroupsResource,
+  type CreateGroupParams,
+  type UpdateGroupParams,
+  type AddMemberParams,
+  type SetPictureParams,
+} from "./groups";
+export {
   ScheduledMessagesResource,
   type UpdateScheduledMessageParams,
 } from "./scheduled-messages";
+export { UtilsResource } from "./utils";
