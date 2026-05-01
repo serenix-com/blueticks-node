@@ -65,11 +65,19 @@ export const MediaUrlResponseSchema = z.object({
 export type MediaUrlResponse = z.infer<typeof MediaUrlResponseSchema>;
 
 /**
- * Response of `POST /v1/chats/message_acks`. Each item in `data` is an
- * unstructured ack record (server-defined; `additionalProperties: true`).
+ * Single entry in a `POST /v1/chats/message_acks` response. WhatsApp ack
+ * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
+ * when no engine response.
  */
+export const BatchMessageAckEntrySchema = z.object({
+  key: z.string(),
+  ack: z.number().int().nullable(),
+});
+export type BatchMessageAckEntry = z.infer<typeof BatchMessageAckEntrySchema>;
+
+/** Response of `POST /v1/chats/message_acks`. */
 export const BatchMessageAcksResponseSchema = z.object({
-  data: z.array(z.record(z.unknown())),
+  data: z.array(BatchMessageAckEntrySchema),
 });
 export type BatchMessageAcksResponse = z.infer<typeof BatchMessageAcksResponseSchema>;
 

@@ -8,6 +8,7 @@ import {
   type Contact,
   type AppendContactsResult,
 } from "../types/audiences";
+import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 export interface ContactInput {
@@ -91,12 +92,12 @@ export class AudiencesResource extends BaseResource {
     });
   }
 
-  /** Delete an audience. */
-  async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<void> {
-    await this.client.request({
+  /** Delete an audience. Returns `{ id, deleted: true }` on success. */
+  async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<DeletedResource> {
+    return this.client.request({
       method: "DELETE",
       path: `/v1/audiences/${id}`,
-      schema: VoidSchema,
+      schema: DeletedResourceSchema,
       signal: opts.signal,
     });
   }

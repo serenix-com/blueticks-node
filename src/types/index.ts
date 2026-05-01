@@ -1,4 +1,5 @@
 export { AccountSchema, type Account } from "./account";
+export { DeletedResourceSchema, type DeletedResource } from "./deleted";
 export { PingSchema, type Ping } from "./ping";
 export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
 export {
@@ -46,6 +47,7 @@ export {
   MessageAckSchema,
   LoadOlderMessagesResponseSchema,
   MediaUrlResponseSchema,
+  BatchMessageAckEntrySchema,
   BatchMessageAcksResponseSchema,
   type Chat,
   type ChatMessage,
@@ -59,6 +61,7 @@ export {
   type MessageAck,
   type LoadOlderMessagesResponse,
   type MediaUrlResponse,
+  type BatchMessageAckEntry,
   type BatchMessageAcksResponse,
 } from "./chats";
 export {

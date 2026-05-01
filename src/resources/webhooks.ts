@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import {
   WebhookSchema,
@@ -6,6 +5,7 @@ import {
   type Webhook,
   type WebhookCreateResult,
 } from "../types/webhooks";
+import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 export interface CreateWebhookParams {
@@ -21,8 +21,6 @@ export interface UpdateWebhookParams {
   status?: "enabled" | "disabled";
 }
 
-// Tolerate empty-body OR deleted-resource-ref response shape from backend.
-const VoidSchema = z.unknown().optional();
 const WebhookPageSchema = pageSchema(WebhookSchema);
 
 export class WebhooksResource extends BaseResource {
@@ -85,12 +83,12 @@ export class WebhooksResource extends BaseResource {
     });
   }
 
-  /** Delete a webhook by id. */
-  async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<void> {
-    await this.client.request({
+  /** Delete a webhook by id. Returns `{ id, deleted: true }` on success. */
+  async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<DeletedResource> {
+    return this.client.request({
       method: "DELETE",
       path: `/v1/webhooks/${id}`,
-      schema: VoidSchema,
+      schema: DeletedResourceSchema,
       signal: opts.signal,
     });
   }

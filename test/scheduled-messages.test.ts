@@ -121,15 +121,15 @@ describe("client.scheduledMessages.update", () => {
 });
 
 describe("client.scheduledMessages.delete", () => {
-  it("DELETEs /v1/scheduled-messages/:id and returns the cancelled model", async () => {
+  it("DELETEs /v1/scheduled-messages/:id and returns typed { id, deleted: true }", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("DELETE");
       expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/sm_1");
-      return jsonResponse(200, baseScheduledMessage({ status: "failed" }));
+      return jsonResponse(200, { id: "sm_1", deleted: true });
     });
-    const m = await c.scheduledMessages.delete("sm_1");
-    expect(m.id).toBe("sm_1");
-    expect(m.status).toBe("failed");
+    const r = await c.scheduledMessages.delete("sm_1");
+    expect(r.id).toBe("sm_1");
+    expect(r.deleted).toBe(true);
   });
 
   it("propagates AuthenticationError on 401", async () => {

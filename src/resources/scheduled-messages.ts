@@ -3,6 +3,7 @@ import {
   ScheduledMessageSchema,
   type ScheduledMessage,
 } from "../types/scheduled-messages";
+import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 const ScheduledMessagePageSchema = pageSchema(ScheduledMessageSchema);
@@ -72,16 +73,16 @@ export class ScheduledMessagesResource extends BaseResource {
   /**
    * Cancel scheduled message.
    *
-   * Removes the resource with id.
+   * Removes the resource with id. Returns `{ id, deleted: true }` on success.
    */
   async delete(
     id: string,
     opts: { signal?: AbortSignal } = {},
-  ): Promise<ScheduledMessage> {
+  ): Promise<DeletedResource> {
     return this.client.request({
       method: "DELETE",
       path: `/v1/scheduled-messages/${encodeURIComponent(id)}`,
-      schema: ScheduledMessageSchema,
+      schema: DeletedResourceSchema,
       signal: opts.signal,
     });
   }

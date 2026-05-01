@@ -76,12 +76,14 @@ describe("client.audiences", () => {
     expect(a.name).toBe("Renamed");
   });
 
-  it("delete returns void on 204", async () => {
+  it("delete returns typed { id, deleted: true } envelope", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("DELETE");
-      return new Response(null, { status: 204 });
+      return jsonResponse(200, { id: "aud_1", deleted: true });
     });
-    await expect(c.audiences.delete("aud_1")).resolves.toBeUndefined();
+    const r = await c.audiences.delete("aud_1");
+    expect(r.id).toBe("aud_1");
+    expect(r.deleted).toBe(true);
   });
 
   it("appendContacts wraps array in { contacts }", async () => {

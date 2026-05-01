@@ -69,14 +69,15 @@ describe("client.webhooks", () => {
     expect(wh.status).toBe("disabled");
   });
 
-  it("delete returns undefined on 204", async () => {
+  it("delete returns typed { id, deleted: true } envelope", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("DELETE");
       expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_1");
-      return new Response(null, { status: 204 });
+      return jsonResponse(200, { id: "wh_1", deleted: true });
     });
     const result = await c.webhooks.delete("wh_1");
-    expect(result).toBeUndefined();
+    expect(result.id).toBe("wh_1");
+    expect(result.deleted).toBe(true);
   });
 
   it("rotateSecret POSTs and returns new secret", async () => {

@@ -331,7 +331,9 @@ describe("client.chats.batchMessageAcks", () => {
     });
     const r = await c.chats.batchMessageAcks({ message_keys: ["k1", "k2"] });
     expect(r.data).toHaveLength(2);
-    expect((r.data[0] as Record<string, unknown>)["key"]).toBe("k1");
+    expect(r.data[0]?.key).toBe("k1");
+    expect(r.data[0]?.ack).toBe(3);
+    expect(r.data[1]?.ack).toBe(1);
   });
 
   it("raises ValidationError when data is missing", async () => {
