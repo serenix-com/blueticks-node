@@ -13,7 +13,7 @@ npm install blueticks
 ```ts
 import { Blueticks } from "blueticks";
 
-const client = new Blueticks({ apiKey: "bt_live_..." });
+const client = new Blueticks({ apiKey: "BLUETICKS_API_KEY" });
 const ping = await client.ping();
 const account = await client.account.retrieve();
 console.log(account.name);
