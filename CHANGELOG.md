@@ -3,6 +3,46 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [3.5.0] — 2026-05-22
+
+OpenAPI parity pass. The SDK now matches `backend/openapi.json`
+operation-for-operation; an engineless drift check
+(`.github/workflows/sdk-spec-drift.yml`) gates future regressions. The
+`/v1/*` surface is pre-release — none of these changes affect production
+callers yet.
+
+### Changed
+
+- `messages.send()` now takes a discriminated union body matching the
+  backend's strict `anyOf` (BE#50). `SendMessageParams` is now
+  `SendTextMessageParams | SendMediaMessageParams | SendPollMessageParams`:
+  ```ts
+  client.messages.send({ to: '+1...', type: 'text', text: 'hi' });
+  client.messages.send({ to: '+1...', type: 'media', media: { url: '...', kind: 'image' } });
+  client.messages.send({ to: '+1...', type: 'poll',  poll: { question: '...', options: [...] } });
+  ```
+- Single-item GETs now use `.retrieve(id)` instead of `.get(id)`:
+  `audiences`, `campaigns`, `chats`, `groups`, `webhooks`, `messages`,
+  `scheduledMessages`. Also `engines.status()` → `engines.retrieve()`.
+- `newsletters.create()` returns typed `Newsletter` (8 fields).
+
+### Added
+
+- `newsletters.list({ limit, cursor })` — `GET /v1/newsletters`
+- `newsletters.retrieve(id)` — `GET /v1/newsletters/{id}`
+- `ping.retrieve()` — typed `Ping` (`account_id`, `key_prefix`, `scopes`).
+- `MessageSchema` now exposes `key`, `type`, `media_kind`, `poll_question`, `link_preview`.
+
+### Removed
+
+- `engines.me`, `engines.logout`, `engines.reload`
+- `contacts.getProfilePicture`
+- `utils.validatePhone`, `utils.linkPreview` (the `utils` resource is now empty)
+
+### Fixed
+
+- `groups.list()` was documented at `dev.blueticks.co` but absent from the SDK for ~9 days — now present.
+
 ## [3.3.0] — 2026-04-30
 
 ### Added

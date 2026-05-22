@@ -35,6 +35,40 @@ function baseGroup(overrides: Record<string, unknown> = {}): Record<string, unkn
   };
 }
 
+describe("client.groups.list", () => {
+  it("GETs /v1/groups and returns Page<Group>", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("GET");
+      expect(new URL(req.url).pathname).toBe("/v1/groups");
+      return jsonResponse(200, {
+        data: [baseGroup()],
+        has_more: false,
+        next_cursor: null,
+      });
+    });
+    const page = await c.groups.list();
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0]?.id).toBe("120363000000000000@g.us");
+    expect(page.has_more).toBe(false);
+  });
+
+  it("passes q param for name search", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).searchParams.get("q")).toBe("Eng");
+      return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
+    });
+    const page = await c.groups.list({ q: "Eng" });
+    expect(page.data).toHaveLength(0);
+  });
+
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() => authErr());
+    const err = await c.groups.list().catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.requestId).toBe("req_a");
+  });
+});
+
 describe("client.groups.create", () => {
   it("POSTs /v1/groups with name + participants and returns Group", async () => {
     const c = mkClient(async (req) => {

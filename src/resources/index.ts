@@ -1,6 +1,13 @@
 export { AccountResource } from "./account";
 export { PingResource } from "./ping";
-export { MessagesResource, type SendMessageParams } from "./messages";
+export {
+  MessagesResource,
+  type SendMessageParams,
+  type SendTextMessageParams,
+  type SendMediaMessageParams,
+  type SendPollMessageParams,
+  type SendMessageCommon,
+} from "./messages";
 export {
   WebhooksResource,
   type CreateWebhookParams,
@@ -19,7 +26,7 @@ export {
   type ListChatsParams,
   type ListMessagesParams,
 } from "./chats";
-export { ContactsResource } from "./contacts";
+export { ContactsResource, type ListContactsParams } from "./contacts";
 export { EnginesResource } from "./engines";
 export {
   GroupsResource,
@@ -28,8 +35,8 @@ export {
   type AddMemberParams,
   type SetPictureParams,
 } from "./groups";
+export { NewslettersResource, type CreateNewsletterParams } from "./newsletters";
 export {
   ScheduledMessagesResource,
   type UpdateScheduledMessageParams,
 } from "./scheduled-messages";
-export { UtilsResource } from "./utils";

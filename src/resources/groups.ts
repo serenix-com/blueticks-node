@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import { GroupSchema, type Group } from "../types/groups";
+import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 const VoidSchema = z.undefined();
+const GroupPageSchema = pageSchema(GroupSchema);
 
 export interface CreateGroupParams {
   name: string;
@@ -22,6 +24,26 @@ export interface SetPictureParams {
 }
 
 export class GroupsResource extends BaseResource {
+  /**
+   * List groups.
+   *
+   * List the groups the connected WhatsApp engine sees. Supports cursor pagination (`limit`+`cursor`) and an optional case-insensitive substring search on the group name via `q`.
+   */
+  async list(
+    params: ListParams & { q?: string; signal?: AbortSignal } = {},
+  ): Promise<Page<Group>> {
+    const { signal, q, ...rest } = params;
+    const query = buildListQuery(rest) as Record<string, string | number>;
+    if (q !== undefined) query.q = q;
+    return this.client.request({
+      method: "GET",
+      path: "/v1/groups",
+      query,
+      schema: GroupPageSchema,
+      signal,
+    });
+  }
+
   /**
    * Create group.
    *

@@ -4,20 +4,59 @@ import { pageSchema, buildListQuery, type Page, type ListParams } from "../types
 
 const MessagePageSchema = pageSchema(MessageSchema);
 
-export interface SendMessageParams {
+/** Shared optional fields present on every message variant. */
+export interface SendMessageCommon {
   to: string;
-  text?: string;
-  media_url?: string;
-  media_caption?: string;
   send_at?: string;
   from?: string;
+  reply_to?: string;
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
 
+/** Send a plain-text message. */
+export interface SendTextMessageParams extends SendMessageCommon {
+  type: "text";
+  text: string;
+  link_preview?: boolean | {
+    title: string;
+    description?: string;
+    canonical_url?: string;
+    thumbnail?: string;
+  };
+}
+
+/** Send a media message (image, video, audio, document, sticker, voice). */
+export interface SendMediaMessageParams extends SendMessageCommon {
+  type: "media";
+  media: {
+    url: string;
+    kind?: "image" | "video" | "audio" | "document" | "sticker" | "voice";
+    caption?: string;
+    filename?: string;
+  };
+}
+
+/** Send a poll message. */
+export interface SendPollMessageParams extends SendMessageCommon {
+  type: "poll";
+  poll: {
+    question: string;
+    options: string[];
+    allow_multiple?: boolean;
+  };
+}
+
+export type SendMessageParams =
+  | SendTextMessageParams
+  | SendMediaMessageParams
+  | SendPollMessageParams;
+
 export class MessagesResource extends BaseResource {
   /**
-   * Send a message immediately or schedule one for later.
+   * Send message.
+   *
+   * Send a message via WhatsApp. The body is a discriminated union — set the `type` field to one of `text`, `media`, or `poll`.
    */
   async send(params: SendMessageParams): Promise<Message> {
     const { idempotencyKey, signal, ...body } = params;
@@ -32,7 +71,9 @@ export class MessagesResource extends BaseResource {
   }
 
   /**
-   * Retrieve a previously sent or scheduled message by id.
+   * Get message.
+   *
+   * Get the current status of a message by ID.
    */
   async get(id: string, opts: { signal?: AbortSignal } = {}): Promise<Message> {
     return this.client.request({
@@ -44,7 +85,9 @@ export class MessagesResource extends BaseResource {
   }
 
   /**
-   * List messages sent through the API, newest first. Cursor-paginated.
+   * List messages.
+   *
+   * List messages sent through the API, newest first (cursor-paginated).
    */
   async list(
     params: ListParams & { signal?: AbortSignal } = {},

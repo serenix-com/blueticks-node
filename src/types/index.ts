@@ -1,25 +1,4 @@
 export { AccountSchema, type Account } from "./account";
-export { DeletedResourceSchema, type DeletedResource } from "./deleted";
-export { PingSchema, type Ping } from "./ping";
-export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
-export {
-  MessageSchema,
-  MessageStatusSchema,
-  type Message,
-  type MessageStatus,
-} from "./messages";
-export {
-  WebhookSchema,
-  WebhookStatusSchema,
-  WebhookEventTypeSchema,
-  WebhookCreateResultSchema,
-  WebhookEventSchema,
-  type Webhook,
-  type WebhookStatus,
-  type WebhookEventType,
-  type WebhookCreateResult,
-  type WebhookEvent,
-} from "./webhooks";
 export {
   AudienceSchema,
   ContactSchema,
@@ -64,20 +43,29 @@ export {
   type BatchMessageAckEntry,
   type BatchMessageAcksResponse,
 } from "./chats";
+export { WhatsAppContactSchema, type WhatsAppContact } from "./contacts";
+export { DeletedResourceSchema, type DeletedResource } from "./deleted";
+export { EngineStatusSchema, type EngineStatus } from "./engines";
+export { GroupSchema, GroupParticipantSchema, type Group, type GroupParticipant } from "./groups";
 export {
-  GroupSchema, GroupParticipantSchema,
-  type Group, type GroupParticipant,
-} from "./groups";
+  MessageSchema,
+  MessageStatusSchema,
+  type Message,
+  type MessageStatus,
+} from "./messages";
+export { NewsletterSchema, type Newsletter } from "./newsletters";
+export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
+export { PingSchema, type Ping } from "./ping";
 export { ScheduledMessageSchema, type ScheduledMessage } from "./scheduled-messages";
 export {
-  WhatsAppContactSchema, ProfilePictureSchema,
-  type WhatsAppContact, type ProfilePicture,
-} from "./contacts";
-export {
-  EngineStatusSchema, WhatsAppMeSchema,
-  type EngineStatus, type WhatsAppMe,
-} from "./engines";
-export {
-  PhoneValidationSchema, LinkPreviewSchema,
-  type PhoneValidation, type LinkPreview,
-} from "./utils";
+  WebhookSchema,
+  WebhookStatusSchema,
+  WebhookEventTypeSchema,
+  WebhookCreateResultSchema,
+  WebhookEventSchema,
+  type Webhook,
+  type WebhookStatus,
+  type WebhookEventType,
+  type WebhookCreateResult,
+  type WebhookEvent,
+} from "./webhooks";

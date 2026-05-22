@@ -3,9 +3,9 @@ import { PingSchema, type Ping } from "../types/ping";
 
 export class PingResource extends BaseResource {
   /**
-   * Health check.
+   * Ping.
    *
-   * Returns basic info about the authenticated API key.
+   * Probe the API: returns the account ID, key prefix, and granted scopes for the authenticated API key. Useful as a connection test and to inspect what an integration is allowed to do. No scope required.
    */
   async retrieve(opts: { signal?: AbortSignal } = {}): Promise<Ping> {
     return this.client.request({

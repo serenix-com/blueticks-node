@@ -11,8 +11,8 @@ import { ChatsResource } from "./resources/chats";
 import { ContactsResource } from "./resources/contacts";
 import { EnginesResource } from "./resources/engines";
 import { GroupsResource } from "./resources/groups";
+import { NewslettersResource } from "./resources/newsletters";
 import { ScheduledMessagesResource } from "./resources/scheduled-messages";
-import { UtilsResource } from "./resources/utils";
 import type { Ping } from "./types/ping";
 
 const DEFAULT_BASE_URL = "https://api.blueticks.co";
@@ -38,8 +38,8 @@ export class Blueticks {
   readonly contacts: ContactsResource;
   readonly engines: EnginesResource;
   readonly groups: GroupsResource;
+  readonly newsletters: NewslettersResource;
   readonly scheduledMessages: ScheduledMessagesResource;
-  readonly utils: UtilsResource;
   private readonly transport: Transport;
   readonly baseUrl: string;
 
@@ -74,8 +74,8 @@ export class Blueticks {
     this.contacts = new ContactsResource(this);
     this.engines = new EnginesResource(this);
     this.groups = new GroupsResource(this);
+    this.newsletters = new NewslettersResource(this);
     this.scheduledMessages = new ScheduledMessagesResource(this);
-    this.utils = new UtilsResource(this);
   }
 
   async ping(opts: { signal?: AbortSignal } = {}): Promise<Ping> {

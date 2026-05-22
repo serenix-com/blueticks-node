@@ -11,8 +11,3 @@ export const WhatsAppContactSchema = z.object({
   is_business: z.boolean(),
 });
 export type WhatsAppContact = z.infer<typeof WhatsAppContactSchema>;
-
-export const ProfilePictureSchema = z.object({
-  url: z.string().nullable(),
-});
-export type ProfilePicture = z.infer<typeof ProfilePictureSchema>;
