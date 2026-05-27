@@ -169,3 +169,28 @@ describe("client.messages.list", () => {
     expect(err.requestId).toBe("req_a");
   });
 });
+
+describe("client.messages.update", () => {
+  it("PATCHes /v1/messages/{id} and returns typed Message", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("PATCH");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/msg_xyz");
+      return jsonResponse(200, baseMessage({ id: "msg_xyz", text: "edited" }));
+    });
+    const m = await c.messages.update("msg_xyz", { text: "edited" });
+    expect(m.id).toBe("msg_xyz");
+    expect(m.text).toBe("edited");
+  });
+
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() => authErr());
+    const err = await c.messages.update("msg_xyz", { text: "x" }).catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.requestId).toBe("req_a");
+  });
+
+  it("raises ValidationError when required field missing", async () => {
+    const c = mkClient(() => jsonResponse(200, {}));
+    await expect(c.messages.update("msg_xyz", { text: "x" })).rejects.toBeInstanceOf(ValidationError);
+  });
+});

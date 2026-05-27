@@ -27,7 +27,7 @@ export const MessageSchema = z.object({
   text: z.string().nullable(),
   media_url: z.string().nullable(),
   media_kind: z
-    .enum(["image", "video", "audio", "document", "sticker", "voice"])
+    .enum(["image", "video", "audio", "document", "sticker", "voice", "gif"])
     .nullable(),
   poll_question: z.string().nullable(),
   status: MessageStatusSchema,

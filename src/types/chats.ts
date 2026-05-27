@@ -4,8 +4,10 @@ export const ChatSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
   is_group: z.boolean(),
+  is_newsletter: z.boolean(),
   last_message_at: z.string().datetime({ offset: true }).nullable(),
   unread_count: z.number().int().nullable(),
+  marked_unread: z.boolean(),
 });
 export type Chat = z.infer<typeof ChatSchema>;
 

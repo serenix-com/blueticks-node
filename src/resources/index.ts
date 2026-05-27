@@ -7,6 +7,7 @@ export {
   type SendMediaMessageParams,
   type SendPollMessageParams,
   type SendMessageCommon,
+  type UpdateMessageParams,
 } from "./messages";
 export {
   WebhooksResource,

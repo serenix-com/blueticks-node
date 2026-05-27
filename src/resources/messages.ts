@@ -101,4 +101,31 @@ export class MessagesResource extends BaseResource {
       signal,
     });
   }
+
+  /**
+   * Update message.
+   *
+   * Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `media_url`, `media_caption`, `send_at` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).
+   */
+  async update(
+    id: string,
+    body: UpdateMessageParams,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Message> {
+    return this.client.request({
+      method: "PATCH",
+      path: `/v1/messages/${encodeURIComponent(id)}`,
+      body,
+      schema: MessageSchema,
+      signal: opts.signal,
+    });
+  }
+}
+
+/** Subset of mutable fields accepted by `PATCH /v1/messages/{id}`. */
+export interface UpdateMessageParams {
+  text?: string;
+  media_url?: string;
+  media_caption?: string;
+  send_at?: string;
 }
