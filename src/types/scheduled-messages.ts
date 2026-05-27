@@ -1,18 +1,44 @@
 import { z } from "zod";
 
+export const ScheduledMessageStatusSchema = z.enum([
+  "scheduled",
+  "queued",
+  "sending",
+  "delivered",
+  "read",
+  "failed",
+]);
+
+export type ScheduledMessageStatus = z.infer<typeof ScheduledMessageStatusSchema>;
+
+const LinkPreviewResponseSchema = z.object({
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  canonical_url: z.string().nullable(),
+  thumbnail: z.string().nullable(),
+}).nullable();
+
 export const ScheduledMessageSchema = z.object({
-  id: z.string(),
-  to: z.string().nullable(),
+  id: z.string().nullable(),
+  key: z.string().nullable(),
+  to: z.string(),
+  from: z.string().nullable(),
+  type: z.enum(["text", "media", "poll"]),
   text: z.string().nullable(),
   media_url: z.string().nullable(),
-  media_caption: z.string().nullable(),
-  media_filename: z.string().nullable(),
-  media_mime_type: z.string().nullable(),
+  media_kind: z
+    .enum(["image", "video", "audio", "document", "sticker", "voice", "gif"])
+    .nullable(),
+  poll_question: z.string().nullable(),
+  status: ScheduledMessageStatusSchema,
   send_at: z.string().datetime({ offset: true }).nullable(),
-  status: z.string().nullable(),
-  is_recurring: z.boolean(),
-  recurrence_rule: z.string().nullable(),
-  created_at: z.string().datetime({ offset: true }).nullable(),
-  updated_at: z.string().datetime({ offset: true }).nullable(),
+  created_at: z.string().datetime({ offset: true }),
+  sent_at: z.string().datetime({ offset: true }).nullable(),
+  delivered_at: z.string().datetime({ offset: true }).nullable(),
+  read_at: z.string().datetime({ offset: true }).nullable(),
+  failed_at: z.string().datetime({ offset: true }).nullable(),
+  failure_reason: z.string().nullable(),
+  link_preview: LinkPreviewResponseSchema.optional(),
 });
+
 export type ScheduledMessage = z.infer<typeof ScheduledMessageSchema>;

@@ -1,15 +1,6 @@
 export { AccountResource } from "./account";
 export { PingResource } from "./ping";
 export {
-  MessagesResource,
-  type SendMessageParams,
-  type SendTextMessageParams,
-  type SendMediaMessageParams,
-  type SendPollMessageParams,
-  type SendMessageCommon,
-  type UpdateMessageParams,
-} from "./messages";
-export {
   WebhooksResource,
   type CreateWebhookParams,
   type UpdateWebhookParams,
@@ -39,5 +30,11 @@ export {
 export { NewslettersResource, type CreateNewsletterParams } from "./newsletters";
 export {
   ScheduledMessagesResource,
+  type ListScheduledMessagesParams,
+  type SendScheduledMessageCommon,
+  type SendScheduledMessageParams,
+  type SendTextScheduledMessageParams,
+  type SendMediaScheduledMessageParams,
+  type SendPollScheduledMessageParams,
   type UpdateScheduledMessageParams,
 } from "./scheduled-messages";

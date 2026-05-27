@@ -3,7 +3,6 @@ import { Transport } from "./transport";
 import { BluetickError } from "./errors";
 import { VERSION } from "./version";
 import { AccountResource } from "./resources/account";
-import { MessagesResource } from "./resources/messages";
 import { WebhooksResource } from "./resources/webhooks";
 import { AudiencesResource } from "./resources/audiences";
 import { CampaignsResource } from "./resources/campaigns";
@@ -30,7 +29,6 @@ export interface BluetickOptions {
 
 export class Blueticks {
   readonly account: AccountResource;
-  readonly messages: MessagesResource;
   readonly webhooks: WebhooksResource;
   readonly audiences: AudiencesResource;
   readonly campaigns: CampaignsResource;
@@ -66,7 +64,6 @@ export class Blueticks {
     });
 
     this.account = new AccountResource(this);
-    this.messages = new MessagesResource(this);
     this.webhooks = new WebhooksResource(this);
     this.audiences = new AudiencesResource(this);
     this.campaigns = new CampaignsResource(this);
