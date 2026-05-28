@@ -42,6 +42,7 @@ export {
   type MediaUrlResponse,
   type BatchMessageAckEntry,
   type BatchMessageAcksResponse,
+  type SendInChatRequest,
 } from "./chats";
 export { WhatsAppContactSchema, type WhatsAppContact } from "./contacts";
 export { DeletedResourceSchema, type DeletedResource } from "./deleted";

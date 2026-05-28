@@ -166,6 +166,139 @@ describe("client.chats.open", () => {
   });
 });
 
+function baseSentMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: null,
+    key: "true_120363000000000000@g.us_3EB0XXXXXXXXXXXXXXXX",
+    to: "120363000000000000@g.us",
+    from: null,
+    type: "text",
+    text: "hello",
+    media_url: null,
+    media_kind: null,
+    poll_question: null,
+    status: "delivered",
+    send_at: null,
+    created_at: "2026-04-23T10:00:00Z",
+    sent_at: "2026-04-23T10:00:00Z",
+    delivered_at: "2026-04-23T10:00:00Z",
+    read_at: null,
+    failed_at: null,
+    failure_reason: null,
+    ...overrides,
+  };
+}
+
+describe("client.chats.sendMessage (text variant)", () => {
+  it("POSTs to /v1/chats/:id/messages with type+text and returns typed message", async () => {
+    const c = mkClient(async (req) => {
+      expect(req.method).toBe("POST");
+      expect(new URL(req.url).pathname).toBe("/v1/chats/c1/messages");
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({ type: "text", text: "hello" });
+      return jsonResponse(201, baseSentMessage({ to: "c1" }));
+    });
+    const m = await c.chats.sendMessage("c1", { type: "text", text: "hello" });
+    expect(m.type).toBe("text");
+    expect(m.status).toBe("delivered");
+    expect(typeof m.key).toBe("string");
+  });
+
+  it("sets Idempotency-Key header when idempotencyKey is provided", async () => {
+    const c = mkClient(async (req) => {
+      expect(req.headers.get("idempotency-key")).toBe("abc-123");
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).not.toHaveProperty("idempotencyKey");
+      return jsonResponse(201, baseSentMessage({ to: "c1" }));
+    });
+    await c.chats.sendMessage(
+      "c1",
+      { type: "text", text: "hi" },
+      { idempotencyKey: "abc-123" },
+    );
+  });
+
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() => authErr());
+    const err = await c.chats
+      .sendMessage("c1", { type: "text", text: "hi" })
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.requestId).toBe("req_a");
+  });
+
+  it("raises ValidationError when required field missing from response", async () => {
+    const c = mkClient(() => jsonResponse(201, {}));
+    await expect(
+      c.chats.sendMessage("c1", { type: "text", text: "hi" }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe("client.chats.sendMessage (media variant)", () => {
+  it("POSTs type:media with media object", async () => {
+    const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/chats/c1/messages");
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "media",
+        media: {
+          url: "https://cdn.example.com/x.pdf",
+          kind: "document",
+          filename: "receipt.pdf",
+        },
+      });
+      return jsonResponse(
+        201,
+        baseSentMessage({
+          to: "c1",
+          type: "media",
+          text: null,
+          media_url: "https://cdn.example.com/x.pdf",
+          media_kind: "document",
+        }),
+      );
+    });
+    const m = await c.chats.sendMessage("c1", {
+      type: "media",
+      media: {
+        url: "https://cdn.example.com/x.pdf",
+        kind: "document",
+        filename: "receipt.pdf",
+      },
+    });
+    expect(m.type).toBe("media");
+    expect(m.media_kind).toBe("document");
+  });
+});
+
+describe("client.chats.sendMessage (poll variant)", () => {
+  it("POSTs type:poll with poll object", async () => {
+    const c = mkClient(async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "poll",
+        poll: { question: "Pizza?", options: ["Yes", "No"] },
+      });
+      return jsonResponse(
+        201,
+        baseSentMessage({
+          to: "c1",
+          type: "poll",
+          text: null,
+          poll_question: "Pizza?",
+        }),
+      );
+    });
+    const m = await c.chats.sendMessage("c1", {
+      type: "poll",
+      poll: { question: "Pizza?", options: ["Yes", "No"] },
+    });
+    expect(m.type).toBe("poll");
+    expect(m.poll_question).toBe("Pizza?");
+  });
+});
+
 describe("client.chats.listMessages", () => {
   it("encodes query params and returns Page<ChatMessage>", async () => {
     const c = mkClient((req) => {

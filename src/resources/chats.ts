@@ -21,7 +21,12 @@ import {
   type MediaUrlResponse,
   type BatchMessageAcksResponse,
   type MessageType,
+  type SendInChatRequest,
 } from "../types/chats";
+import {
+  ScheduledMessageSchema,
+  type ScheduledMessage,
+} from "../types/scheduled-messages";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
 const ChatPageSchema = pageSchema(ChatSchema);
@@ -114,6 +119,26 @@ export class ChatsResource extends BaseResource {
       method: "POST",
       path: `/v1/chats/${encodeURIComponent(chatId)}/open`,
       schema: ChatRefSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Send message to chat.
+   *
+   * Send a message immediately to a specific chat. The body is the same discriminated union as `POST /v1/scheduled-messages` minus `to` (derived from the URL path) and `send_at` (this endpoint is fire-and-forget). Variants: `text`, `media`, `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages` instead. Requires `messages:write`.
+   */
+  async sendMessage(
+    chatId: string,
+    body: SendInChatRequest,
+    opts: { idempotencyKey?: string; signal?: AbortSignal } = {},
+  ): Promise<ScheduledMessage> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/chats/${encodeURIComponent(chatId)}/messages`,
+      body,
+      schema: ScheduledMessageSchema,
+      idempotencyKey: opts.idempotencyKey,
       signal: opts.signal,
     });
   }

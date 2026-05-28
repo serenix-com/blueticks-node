@@ -124,6 +124,63 @@ export const MediaUnavailableReasonSchema = z.enum([
 ]);
 export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema>;
 
+/**
+ * Discriminated body for `POST /v1/chats/{chat_id}/messages`. Same shape as
+ * `SendMessageRequest` (scheduled-messages) minus `to` (taken from the URL
+ * path) and `send_at` (this endpoint is fire-and-forget). Variants: `text`,
+ * `media`, `poll`.
+ */
+export type SendInChatRequest =
+  | {
+      type: "text";
+      text?: string;
+      url?: string;
+      link_preview?:
+        | boolean
+        | {
+            title: string;
+            description?: string;
+            canonical_url?: string;
+            thumbnail?: string;
+          };
+      from?: string;
+      reply_to?: string;
+      mentions?: {
+        ids: string[];
+        displays?: string[];
+      };
+    }
+  | {
+      type: "media";
+      media: {
+        url?: string;
+        data_base64?: string;
+        kind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
+        caption?: string;
+        filename?: string;
+      };
+      from?: string;
+      reply_to?: string;
+      mentions?: {
+        ids: string[];
+        displays?: string[];
+      };
+    }
+  | {
+      type: "poll";
+      poll: {
+        question: string;
+        options: string[];
+        allow_multiple?: boolean;
+      };
+      from?: string;
+      reply_to?: string;
+      mentions?: {
+        ids: string[];
+        displays?: string[];
+      };
+    };
+
 export const ChatMediaSchema = z.object({
   url: z.string().nullable(),
   mimetype: z.string().nullable(),
