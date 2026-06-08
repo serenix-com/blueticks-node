@@ -127,7 +127,7 @@ export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema
 /**
  * Discriminated body for `POST /v1/chats/{chat_id}/messages`. Same shape as
  * `SendMessageRequest` (scheduled-messages) minus `to` (taken from the URL
- * path) and `send_at` (this endpoint is fire-and-forget). Variants: `text`,
+ * path) and `sendAt` (this endpoint is fire-and-forget). Variants: `text`,
  * `media`, `poll`.
  */
 export type SendInChatRequest =
@@ -135,16 +135,16 @@ export type SendInChatRequest =
       type: "text";
       text?: string;
       url?: string;
-      link_preview?:
+      linkPreview?:
         | boolean
         | {
             title: string;
             description?: string;
-            canonical_url?: string;
+            canonicalUrl?: string;
             thumbnail?: string;
           };
       from?: string;
-      reply_to?: string;
+      replyTo?: string;
       mentions?: {
         ids: string[];
         displays?: string[];
@@ -154,13 +154,13 @@ export type SendInChatRequest =
       type: "media";
       media: {
         url?: string;
-        data_base64?: string;
+        dataBase64?: string;
         kind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
         caption?: string;
         filename?: string;
       };
       from?: string;
-      reply_to?: string;
+      replyTo?: string;
       mentions?: {
         ids: string[];
         displays?: string[];
@@ -171,10 +171,10 @@ export type SendInChatRequest =
       poll: {
         question: string;
         options: string[];
-        allow_multiple?: boolean;
+        allowMultiple?: boolean;
       };
       from?: string;
-      reply_to?: string;
+      replyTo?: string;
       mentions?: {
         ids: string[];
         displays?: string[];

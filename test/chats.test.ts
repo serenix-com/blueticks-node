@@ -174,17 +174,17 @@ function baseSentMessage(overrides: Record<string, unknown> = {}): Record<string
     from: null,
     type: "text",
     text: "hello",
-    media_url: null,
-    media_kind: null,
-    poll_question: null,
+    mediaUrl: null,
+    mediaKind: null,
+    pollQuestion: null,
     status: "delivered",
-    send_at: null,
-    created_at: "2026-04-23T10:00:00Z",
-    sent_at: "2026-04-23T10:00:00Z",
-    delivered_at: "2026-04-23T10:00:00Z",
-    read_at: null,
-    failed_at: null,
-    failure_reason: null,
+    sendAt: null,
+    createdAt: "2026-04-23T10:00:00Z",
+    sentAt: "2026-04-23T10:00:00Z",
+    deliveredAt: "2026-04-23T10:00:00Z",
+    readAt: null,
+    failedAt: null,
+    failureReason: null,
     ...overrides,
   };
 }
@@ -254,8 +254,8 @@ describe("client.chats.sendMessage (media variant)", () => {
           to: "c1",
           type: "media",
           text: null,
-          media_url: "https://cdn.example.com/x.pdf",
-          media_kind: "document",
+          mediaUrl: "https://cdn.example.com/x.pdf",
+          mediaKind: "document",
         }),
       );
     });
@@ -268,7 +268,27 @@ describe("client.chats.sendMessage (media variant)", () => {
       },
     });
     expect(m.type).toBe("media");
-    expect(m.media_kind).toBe("document");
+    expect(m.mediaKind).toBe("document");
+  });
+
+  it("forwards camelCase wire fields (media.dataBase64, replyTo)", async () => {
+    const c = mkClient(async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "media",
+        media: { dataBase64: "AAAA", kind: "image", filename: "x.png" },
+        replyTo: "msg_abc",
+      });
+      return jsonResponse(
+        201,
+        baseSentMessage({ to: "c1", type: "media", text: null, mediaKind: "image" }),
+      );
+    });
+    await c.chats.sendMessage("c1", {
+      type: "media",
+      media: { dataBase64: "AAAA", kind: "image", filename: "x.png" },
+      replyTo: "msg_abc",
+    });
   });
 });
 
@@ -286,7 +306,7 @@ describe("client.chats.sendMessage (poll variant)", () => {
           to: "c1",
           type: "poll",
           text: null,
-          poll_question: "Pizza?",
+          pollQuestion: "Pizza?",
         }),
       );
     });
@@ -295,7 +315,7 @@ describe("client.chats.sendMessage (poll variant)", () => {
       poll: { question: "Pizza?", options: ["Yes", "No"] },
     });
     expect(m.type).toBe("poll");
-    expect(m.poll_question).toBe("Pizza?");
+    expect(m.pollQuestion).toBe("Pizza?");
   });
 });
 

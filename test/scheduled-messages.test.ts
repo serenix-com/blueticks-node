@@ -24,17 +24,17 @@ function baseScheduledMessage(overrides: Record<string, unknown> = {}): Record<s
     from: null,
     type: "text",
     text: "hello",
-    media_url: null,
-    media_kind: null,
-    poll_question: null,
+    mediaUrl: null,
+    mediaKind: null,
+    pollQuestion: null,
     status: "scheduled",
-    send_at: null,
-    created_at: "2026-04-23T10:00:00Z",
-    sent_at: null,
-    delivered_at: null,
-    read_at: null,
-    failed_at: null,
-    failure_reason: null,
+    sendAt: null,
+    createdAt: "2026-04-23T10:00:00Z",
+    sentAt: null,
+    deliveredAt: null,
+    readAt: null,
+    failedAt: null,
+    failureReason: null,
     ...overrides,
   };
 }
@@ -74,6 +74,29 @@ describe("client.scheduledMessages.create (text variant)", () => {
     });
   });
 
+  it("forwards camelCase wire fields (sendAt, replyTo, linkPreview)", async () => {
+    const c = mkClient(async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "text",
+        to: "+15551230001",
+        text: "hello",
+        sendAt: "2026-06-01T12:00:00Z",
+        replyTo: "msg_abc",
+        linkPreview: { title: "T", canonicalUrl: "https://example.com/x" },
+      });
+      return jsonResponse(201, baseScheduledMessage());
+    });
+    await c.scheduledMessages.create({
+      type: "text",
+      to: "+15551230001",
+      text: "hello",
+      sendAt: "2026-06-01T12:00:00Z",
+      replyTo: "msg_abc",
+      linkPreview: { title: "T", canonicalUrl: "https://example.com/x" },
+    });
+  });
+
   it("raises ValidationError when required field missing from response", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(
@@ -95,8 +118,8 @@ describe("client.scheduledMessages.create (media variant)", () => {
         201,
         baseScheduledMessage({
           type: "media",
-          media_url: "https://cdn.example.com/x.pdf",
-          media_kind: "document",
+          mediaUrl: "https://cdn.example.com/x.pdf",
+          mediaKind: "document",
           text: null,
         }),
       );
@@ -111,7 +134,7 @@ describe("client.scheduledMessages.create (media variant)", () => {
       },
     });
     expect(m.type).toBe("media");
-    expect(m.media_kind).toBe("document");
+    expect(m.mediaKind).toBe("document");
   });
 });
 
@@ -126,7 +149,7 @@ describe("client.scheduledMessages.create (poll variant)", () => {
       });
       return jsonResponse(
         201,
-        baseScheduledMessage({ type: "poll", poll_question: "Pizza?", text: null }),
+        baseScheduledMessage({ type: "poll", pollQuestion: "Pizza?", text: null }),
       );
     });
     const m = await c.scheduledMessages.create({
@@ -135,7 +158,27 @@ describe("client.scheduledMessages.create (poll variant)", () => {
       poll: { question: "Pizza?", options: ["Yes", "No"] },
     });
     expect(m.type).toBe("poll");
-    expect(m.poll_question).toBe("Pizza?");
+    expect(m.pollQuestion).toBe("Pizza?");
+  });
+
+  it("forwards poll.allowMultiple in camelCase", async () => {
+    const c = mkClient(async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "poll",
+        to: "+15551230001",
+        poll: { question: "Pizza?", options: ["Yes", "No"], allowMultiple: true },
+      });
+      return jsonResponse(
+        201,
+        baseScheduledMessage({ type: "poll", pollQuestion: "Pizza?", text: null }),
+      );
+    });
+    await c.scheduledMessages.create({
+      type: "poll",
+      to: "+15551230001",
+      poll: { question: "Pizza?", options: ["Yes", "No"], allowMultiple: true },
+    });
   });
 
   it("propagates AuthenticationError on 401", async () => {
@@ -167,16 +210,16 @@ describe("client.scheduledMessages.list", () => {
     expect(result.next_cursor).toBeNull();
   });
 
-  it("forwards chat_id / status / q filters as query params", async () => {
+  it("forwards chatId / status / q filters as query params", async () => {
     const c = mkClient((req) => {
       const url = new URL(req.url);
-      expect(url.searchParams.get("chat_id")).toBe("15551230001@c.us");
+      expect(url.searchParams.get("chatId")).toBe("15551230001@c.us");
       expect(url.searchParams.get("status")).toBe("queued");
       expect(url.searchParams.get("q")).toBe("hello");
       return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
     });
     await c.scheduledMessages.list({
-      chat_id: "15551230001@c.us",
+      chatId: "15551230001@c.us",
       status: "queued",
       q: "hello",
     });
@@ -229,18 +272,18 @@ describe("client.scheduledMessages.update", () => {
       expect(req.method).toBe("PATCH");
       expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/sm_1");
       const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ text: "updated", send_at: "2026-06-01T12:00:00Z" });
+      expect(body).toEqual({ text: "updated", sendAt: "2026-06-01T12:00:00Z" });
       return jsonResponse(
         200,
-        baseScheduledMessage({ text: "updated", send_at: "2026-06-01T12:00:00Z" }),
+        baseScheduledMessage({ text: "updated", sendAt: "2026-06-01T12:00:00Z" }),
       );
     });
     const m = await c.scheduledMessages.update("sm_1", {
       text: "updated",
-      send_at: "2026-06-01T12:00:00Z",
+      sendAt: "2026-06-01T12:00:00Z",
     });
     expect(m.text).toBe("updated");
-    expect(m.send_at).toBe("2026-06-01T12:00:00Z");
+    expect(m.sendAt).toBe("2026-06-01T12:00:00Z");
   });
 
   it("propagates AuthenticationError on 401", async () => {

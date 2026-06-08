@@ -14,7 +14,7 @@ export type ScheduledMessageStatus = z.infer<typeof ScheduledMessageStatusSchema
 const LinkPreviewResponseSchema = z.object({
   title: z.string().nullable(),
   description: z.string().nullable(),
-  canonical_url: z.string().nullable(),
+  canonicalUrl: z.string().nullable(),
   thumbnail: z.string().nullable(),
 }).nullable();
 
@@ -25,20 +25,20 @@ export const ScheduledMessageSchema = z.object({
   from: z.string().nullable(),
   type: z.enum(["text", "media", "poll"]),
   text: z.string().nullable(),
-  media_url: z.string().nullable(),
-  media_kind: z
+  mediaUrl: z.string().nullable(),
+  mediaKind: z
     .enum(["image", "video", "audio", "document", "sticker", "voice", "gif"])
     .nullable(),
-  poll_question: z.string().nullable(),
+  pollQuestion: z.string().nullable(),
   status: ScheduledMessageStatusSchema,
-  send_at: z.string().datetime({ offset: true }).nullable(),
-  created_at: z.string().datetime({ offset: true }),
-  sent_at: z.string().datetime({ offset: true }).nullable(),
-  delivered_at: z.string().datetime({ offset: true }).nullable(),
-  read_at: z.string().datetime({ offset: true }).nullable(),
-  failed_at: z.string().datetime({ offset: true }).nullable(),
-  failure_reason: z.string().nullable(),
-  link_preview: LinkPreviewResponseSchema.optional(),
+  sendAt: z.string().datetime({ offset: true }).nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+  sentAt: z.string().datetime({ offset: true }).nullable(),
+  deliveredAt: z.string().datetime({ offset: true }).nullable(),
+  readAt: z.string().datetime({ offset: true }).nullable(),
+  failedAt: z.string().datetime({ offset: true }).nullable(),
+  failureReason: z.string().nullable(),
+  linkPreview: LinkPreviewResponseSchema.optional(),
 });
 
 export type ScheduledMessage = z.infer<typeof ScheduledMessageSchema>;

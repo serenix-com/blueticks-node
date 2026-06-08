@@ -10,9 +10,9 @@ const ScheduledMessagePageSchema = pageSchema(ScheduledMessageSchema);
 /** Shared optional fields present on every send-message variant. */
 export interface SendScheduledMessageCommon {
   to: string;
-  send_at?: string;
+  sendAt?: string;
   from?: string;
-  reply_to?: string;
+  replyTo?: string;
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
@@ -21,10 +21,10 @@ export interface SendScheduledMessageCommon {
 export interface SendTextScheduledMessageParams extends SendScheduledMessageCommon {
   type: "text";
   text: string;
-  link_preview?: boolean | {
+  linkPreview?: boolean | {
     title: string;
     description?: string;
-    canonical_url?: string;
+    canonicalUrl?: string;
     thumbnail?: string;
   };
 }
@@ -46,7 +46,7 @@ export interface SendPollScheduledMessageParams extends SendScheduledMessageComm
   poll: {
     question: string;
     options: string[];
-    allow_multiple?: boolean;
+    allowMultiple?: boolean;
   };
 }
 
@@ -58,14 +58,14 @@ export type SendScheduledMessageParams =
 /** Subset of mutable fields accepted by `PATCH /v1/scheduled-messages/{id}`. */
 export interface UpdateScheduledMessageParams {
   text?: string;
-  media_url?: string;
-  media_caption?: string;
-  send_at?: string;
+  mediaUrl?: string;
+  mediaCaption?: string;
+  sendAt?: string;
 }
 
 /** Optional filters accepted by `GET /v1/scheduled-messages`. */
 export interface ListScheduledMessagesParams extends ListParams {
-  chat_id?: string;
+  chatId?: string;
   status?: "scheduled" | "queued" | "sending" | "delivered" | "read" | "failed";
   q?: string;
 }
@@ -74,14 +74,14 @@ export class ScheduledMessagesResource extends BaseResource {
   /**
    * List messages.
    *
-   * List messages in the user-messages queue (all sources: API, dashboard, extension), newest first (cursor-paginated). Optionally filter by `chat_id` and/or lifecycle `status`.
+   * List messages in the user-messages queue (all sources: API, dashboard, extension), newest first (cursor-paginated). Optionally filter by `chatId` and/or lifecycle `status`.
    */
   async list(
     params: ListScheduledMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<ScheduledMessage>> {
-    const { signal, chat_id, status, q, ...listParams } = params;
+    const { signal, chatId, status, q, ...listParams } = params;
     const query = buildListQuery(listParams);
-    if (chat_id !== undefined) query.chat_id = chat_id;
+    if (chatId !== undefined) query.chatId = chatId;
     if (status !== undefined) query.status = status;
     if (q !== undefined) query.q = q;
     return this.client.request({
@@ -130,7 +130,7 @@ export class ScheduledMessagesResource extends BaseResource {
   /**
    * Update message.
    *
-   * Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `media_url`, `media_caption`, `send_at` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).
+   * Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `mediaUrl`, `mediaCaption`, `sendAt` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).
    */
   async update(
     id: string,

@@ -53,7 +53,7 @@
     },
     {
       "name": "Scheduled Messages",
-      "description": "Send or schedule WhatsApp messages via the user-messages queue. Each request creates a queued send — set `send_at` (RFC 3339) to defer delivery, omit it to send immediately. List, retrieve, edit, and cancel queued sends."
+      "description": "Send or schedule WhatsApp messages via the user-messages queue. Each request creates a queued send — set `sendAt` (RFC 3339) to defer delivery, omit it to send immediately. List, retrieve, edit, and cancel queued sends."
     },
     {
       "name": "Webhooks",
@@ -361,7 +361,7 @@
           "Scheduled Messages"
         ],
         "summary": "List scheduled messages",
-        "description": "List messages in the user-messages queue (all sources: API, dashboard, extension), newest first (offset-paginated). Optionally filter by `chat_id` and/or lifecycle `status`.",
+        "description": "List messages in the user-messages queue (all sources: API, dashboard, extension), newest first (offset-paginated). Optionally filter by `chatId` and/or lifecycle `status`.",
         "security": [
           {
             "BearerAuth": [
@@ -394,7 +394,7 @@
             "description": "Number of items to skip before the page (default 0)."
           },
           {
-            "name": "chat_id",
+            "name": "chatId",
             "in": "query",
             "required": false,
             "schema": {
@@ -418,7 +418,7 @@
                 "failed"
               ]
             },
-            "description": "Filter by lifecycle status. `scheduled` returns pending messages whose `send_at` is in the future; `queued` returns pending messages ready for immediate dispatch; `sending`/`delivered`/`read`/`failed` reflect post-dispatch states. Omit to return all statuses."
+            "description": "Filter by lifecycle status. `scheduled` returns pending messages whose `sendAt` is in the future; `queued` returns pending messages ready for immediate dispatch; `sending`/`delivered`/`read`/`failed` reflect post-dispatch states. Omit to return all statuses."
           },
           {
             "name": "searchToken",
@@ -480,11 +480,11 @@
                             "type": "string",
                             "nullable": true
                           },
-                          "media_url": {
+                          "mediaUrl": {
                             "type": "string",
                             "nullable": true
                           },
-                          "media_kind": {
+                          "mediaKind": {
                             "type": "string",
                             "enum": [
                               "image",
@@ -497,7 +497,7 @@
                             ],
                             "nullable": true
                           },
-                          "poll_question": {
+                          "pollQuestion": {
                             "type": "string",
                             "nullable": true
                           },
@@ -512,40 +512,40 @@
                               "failed"
                             ]
                           },
-                          "send_at": {
+                          "sendAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
                           },
-                          "created_at": {
+                          "createdAt": {
                             "type": "string",
                             "format": "date-time"
                           },
-                          "sent_at": {
+                          "sentAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
                           },
-                          "delivered_at": {
+                          "deliveredAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
                           },
-                          "read_at": {
+                          "readAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
                           },
-                          "failed_at": {
+                          "failedAt": {
                             "type": "string",
                             "format": "date-time",
                             "nullable": true
                           },
-                          "failure_reason": {
+                          "failureReason": {
                             "type": "string",
                             "nullable": true
                           },
-                          "link_preview": {
+                          "linkPreview": {
                             "type": "object",
                             "properties": {
                               "title": {
@@ -556,7 +556,7 @@
                                 "type": "string",
                                 "nullable": true
                               },
-                              "canonical_url": {
+                              "canonicalUrl": {
                                 "type": "string",
                                 "nullable": true
                               },
@@ -568,7 +568,7 @@
                             "required": [
                               "title",
                               "description",
-                              "canonical_url",
+                              "canonicalUrl",
                               "thumbnail"
                             ],
                             "additionalProperties": false,
@@ -582,17 +582,17 @@
                           "from",
                           "type",
                           "text",
-                          "media_url",
-                          "media_kind",
-                          "poll_question",
+                          "mediaUrl",
+                          "mediaKind",
+                          "pollQuestion",
                           "status",
-                          "send_at",
-                          "created_at",
-                          "sent_at",
-                          "delivered_at",
-                          "read_at",
-                          "failed_at",
-                          "failure_reason"
+                          "sendAt",
+                          "createdAt",
+                          "sentAt",
+                          "deliveredAt",
+                          "readAt",
+                          "failedAt",
+                          "failureReason"
                         ],
                         "additionalProperties": false
                       }
@@ -690,7 +690,7 @@
           "Scheduled Messages"
         ],
         "summary": "Schedule message",
-        "description": "Send a message via WhatsApp. The body is a discriminated union — set the `type` field to one of `text`, `media`, or `poll`.\n\n**Variants:**\n\n- `type: \"text\"` — required `text` (1–4096 chars). Example body:\n  ```json\n  {\"type\":\"text\",\"to\":\"+15551234567\",\"text\":\"hello\"}\n  ```\n- `type: \"media\"` — required `media.url` (HTTPS). Optional `media.kind` (`image` · `video` · `audio` · `document` · `sticker` · `voice`; auto-detected when omitted), `media.caption`, `media.filename`. Example:\n  ```json\n  {\"type\":\"media\",\"to\":\"+15551234567\",\"media\":{\"url\":\"https://cdn.example.com/x.pdf\",\"kind\":\"document\",\"filename\":\"receipt.pdf\"}}\n  ```\n- `type: \"poll\"` — required `poll.question` and `poll.options` (2–12 items). Optional `poll.allow_multiple` (default false). Example:\n  ```json\n  {\"type\":\"poll\",\"to\":\"+15551234567\",\"poll\":{\"question\":\"Pizza?\",\"options\":[\"Yes\",\"No\"]}}\n  ```\n\nAll variants accept optional `send_at` (ISO 8601 ≥10s future, ≤365d), `from` (E.164 sender for multi-session workspaces), and `reply_to` (wire `key` of a prior message to quote).\n\nSee [Sending messages](/docs/messages) for runnable Python / Node / PHP / cURL examples per variant.",
+        "description": "Send a message via WhatsApp. The body is a discriminated union — set the `type` field to one of `text`, `media`, or `poll`.\n\n**Variants:**\n\n- `type: \"text\"` — required `text` (1–4096 chars). Example body:\n  ```json\n  {\"type\":\"text\",\"to\":\"+15551234567\",\"text\":\"hello\"}\n  ```\n- `type: \"media\"` — required `media.url` (HTTPS). Optional `media.kind` (`image` · `video` · `audio` · `document` · `sticker` · `voice`; auto-detected when omitted), `media.caption`, `media.filename`. Example:\n  ```json\n  {\"type\":\"media\",\"to\":\"+15551234567\",\"media\":{\"url\":\"https://cdn.example.com/x.pdf\",\"kind\":\"document\",\"filename\":\"receipt.pdf\"}}\n  ```\n- `type: \"poll\"` — required `poll.question` and `poll.options` (2–12 items). Optional `poll.allowMultiple` (default false). Example:\n  ```json\n  {\"type\":\"poll\",\"to\":\"+15551234567\",\"poll\":{\"question\":\"Pizza?\",\"options\":[\"Yes\",\"No\"]}}\n  ```\n\nAll variants accept optional `sendAt` (ISO 8601 ≥10s future, ≤365d), `from` (E.164 sender for multi-session workspaces), and `replyTo` (wire `key` of a prior message to quote).\n\nSee [Sending messages](/docs/messages) for runnable Python / Node / PHP / cURL examples per variant.",
         "security": [
           {
             "BearerAuth": [
@@ -727,10 +727,10 @@
                     "to": "+15555550100",
                     "type": "text",
                     "text": "Check this out: https://blueticks.co",
-                    "link_preview": {
+                    "linkPreview": {
                       "title": "Blueticks",
                       "description": "WhatsApp business automation",
-                      "canonical_url": "https://blueticks.co"
+                      "canonicalUrl": "https://blueticks.co"
                     }
                   }
                 },
@@ -779,16 +779,16 @@
                     "to": "+15555550100",
                     "type": "text",
                     "text": "Reminder: meeting in 3 hours",
-                    "send_at": "2026-12-31T12:00:00Z"
+                    "sendAt": "2026-12-31T12:00:00Z"
                   }
                 },
-                "reply_to": {
+                "replyTo": {
                   "summary": "Reply quoting a prior message",
                   "value": {
                     "to": "+15555550100",
                     "type": "text",
                     "text": "Sounds good!",
-                    "reply_to": "true_15555550100@c.us_3EB0ABCDEF1234567890"
+                    "replyTo": "true_15555550100@c.us_3EB0ABCDEF1234567890"
                   }
                 }
               }
@@ -853,11 +853,11 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "media_url": {
+                        "mediaUrl": {
                           "type": "string",
                           "nullable": true
                         },
-                        "media_kind": {
+                        "mediaKind": {
                           "type": "string",
                           "enum": [
                             "image",
@@ -870,7 +870,7 @@
                           ],
                           "nullable": true
                         },
-                        "poll_question": {
+                        "pollQuestion": {
                           "type": "string",
                           "nullable": true
                         },
@@ -885,40 +885,40 @@
                             "failed"
                           ]
                         },
-                        "send_at": {
+                        "sendAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "created_at": {
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time"
                         },
-                        "sent_at": {
+                        "sentAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "delivered_at": {
+                        "deliveredAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "read_at": {
+                        "readAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failed_at": {
+                        "failedAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failure_reason": {
+                        "failureReason": {
                           "type": "string",
                           "nullable": true
                         },
-                        "link_preview": {
+                        "linkPreview": {
                           "type": "object",
                           "properties": {
                             "title": {
@@ -929,7 +929,7 @@
                               "type": "string",
                               "nullable": true
                             },
-                            "canonical_url": {
+                            "canonicalUrl": {
                               "type": "string",
                               "nullable": true
                             },
@@ -941,7 +941,7 @@
                           "required": [
                             "title",
                             "description",
-                            "canonical_url",
+                            "canonicalUrl",
                             "thumbnail"
                           ],
                           "additionalProperties": false,
@@ -955,17 +955,17 @@
                         "from",
                         "type",
                         "text",
-                        "media_url",
-                        "media_kind",
-                        "poll_question",
+                        "mediaUrl",
+                        "mediaKind",
+                        "pollQuestion",
                         "status",
-                        "send_at",
-                        "created_at",
-                        "sent_at",
-                        "delivered_at",
-                        "read_at",
-                        "failed_at",
-                        "failure_reason"
+                        "sendAt",
+                        "createdAt",
+                        "sentAt",
+                        "deliveredAt",
+                        "readAt",
+                        "failedAt",
+                        "failureReason"
                       ],
                       "additionalProperties": false
                     }
@@ -1024,11 +1024,11 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "media_url": {
+                        "mediaUrl": {
                           "type": "string",
                           "nullable": true
                         },
-                        "media_kind": {
+                        "mediaKind": {
                           "type": "string",
                           "enum": [
                             "image",
@@ -1041,7 +1041,7 @@
                           ],
                           "nullable": true
                         },
-                        "poll_question": {
+                        "pollQuestion": {
                           "type": "string",
                           "nullable": true
                         },
@@ -1056,40 +1056,40 @@
                             "failed"
                           ]
                         },
-                        "send_at": {
+                        "sendAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "created_at": {
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time"
                         },
-                        "sent_at": {
+                        "sentAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "delivered_at": {
+                        "deliveredAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "read_at": {
+                        "readAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failed_at": {
+                        "failedAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failure_reason": {
+                        "failureReason": {
                           "type": "string",
                           "nullable": true
                         },
-                        "link_preview": {
+                        "linkPreview": {
                           "type": "object",
                           "properties": {
                             "title": {
@@ -1100,7 +1100,7 @@
                               "type": "string",
                               "nullable": true
                             },
-                            "canonical_url": {
+                            "canonicalUrl": {
                               "type": "string",
                               "nullable": true
                             },
@@ -1112,7 +1112,7 @@
                           "required": [
                             "title",
                             "description",
-                            "canonical_url",
+                            "canonicalUrl",
                             "thumbnail"
                           ],
                           "additionalProperties": false,
@@ -1126,17 +1126,17 @@
                         "from",
                         "type",
                         "text",
-                        "media_url",
-                        "media_kind",
-                        "poll_question",
+                        "mediaUrl",
+                        "mediaKind",
+                        "pollQuestion",
                         "status",
-                        "send_at",
-                        "created_at",
-                        "sent_at",
-                        "delivered_at",
-                        "read_at",
-                        "failed_at",
-                        "failure_reason"
+                        "sendAt",
+                        "createdAt",
+                        "sentAt",
+                        "deliveredAt",
+                        "readAt",
+                        "failedAt",
+                        "failureReason"
                       ],
                       "additionalProperties": false
                     }
@@ -1274,11 +1274,11 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "media_url": {
+                        "mediaUrl": {
                           "type": "string",
                           "nullable": true
                         },
-                        "media_kind": {
+                        "mediaKind": {
                           "type": "string",
                           "enum": [
                             "image",
@@ -1291,7 +1291,7 @@
                           ],
                           "nullable": true
                         },
-                        "poll_question": {
+                        "pollQuestion": {
                           "type": "string",
                           "nullable": true
                         },
@@ -1306,40 +1306,40 @@
                             "failed"
                           ]
                         },
-                        "send_at": {
+                        "sendAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "created_at": {
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time"
                         },
-                        "sent_at": {
+                        "sentAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "delivered_at": {
+                        "deliveredAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "read_at": {
+                        "readAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failed_at": {
+                        "failedAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failure_reason": {
+                        "failureReason": {
                           "type": "string",
                           "nullable": true
                         },
-                        "link_preview": {
+                        "linkPreview": {
                           "type": "object",
                           "properties": {
                             "title": {
@@ -1350,7 +1350,7 @@
                               "type": "string",
                               "nullable": true
                             },
-                            "canonical_url": {
+                            "canonicalUrl": {
                               "type": "string",
                               "nullable": true
                             },
@@ -1362,7 +1362,7 @@
                           "required": [
                             "title",
                             "description",
-                            "canonical_url",
+                            "canonicalUrl",
                             "thumbnail"
                           ],
                           "additionalProperties": false,
@@ -1376,17 +1376,17 @@
                         "from",
                         "type",
                         "text",
-                        "media_url",
-                        "media_kind",
-                        "poll_question",
+                        "mediaUrl",
+                        "mediaKind",
+                        "pollQuestion",
                         "status",
-                        "send_at",
-                        "created_at",
-                        "sent_at",
-                        "delivered_at",
-                        "read_at",
-                        "failed_at",
-                        "failure_reason"
+                        "sendAt",
+                        "createdAt",
+                        "sentAt",
+                        "deliveredAt",
+                        "readAt",
+                        "failedAt",
+                        "failureReason"
                       ],
                       "additionalProperties": false
                     }
@@ -1488,7 +1488,7 @@
           "Scheduled Messages"
         ],
         "summary": "Update scheduled message",
-        "description": "Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `media_url`, `media_caption`, `send_at` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).",
+        "description": "Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `mediaUrl`, `mediaCaption`, `sendAt` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).",
         "security": [
           {
             "BearerAuth": [
@@ -1508,19 +1508,19 @@
                     "maxLength": 4096,
                     "description": "New text body. Replaces the previous text/caption."
                   },
-                  "media_url": {
+                  "mediaUrl": {
                     "type": "string",
                     "format": "uri",
                     "maxLength": 2048,
                     "description": "Replace the attached media URL (https only)."
                   },
-                  "media_caption": {
+                  "mediaCaption": {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 1024,
                     "description": "Replace the media's caption. When set alongside `text`, `text` wins."
                   },
-                  "send_at": {
+                  "sendAt": {
                     "type": "string",
                     "format": "date-time",
                     "description": "Reschedule. ISO 8601 datetime (UTC) in the future."
@@ -1577,11 +1577,11 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "media_url": {
+                        "mediaUrl": {
                           "type": "string",
                           "nullable": true
                         },
-                        "media_kind": {
+                        "mediaKind": {
                           "type": "string",
                           "enum": [
                             "image",
@@ -1594,7 +1594,7 @@
                           ],
                           "nullable": true
                         },
-                        "poll_question": {
+                        "pollQuestion": {
                           "type": "string",
                           "nullable": true
                         },
@@ -1609,40 +1609,40 @@
                             "failed"
                           ]
                         },
-                        "send_at": {
+                        "sendAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "created_at": {
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time"
                         },
-                        "sent_at": {
+                        "sentAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "delivered_at": {
+                        "deliveredAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "read_at": {
+                        "readAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failed_at": {
+                        "failedAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failure_reason": {
+                        "failureReason": {
                           "type": "string",
                           "nullable": true
                         },
-                        "link_preview": {
+                        "linkPreview": {
                           "type": "object",
                           "properties": {
                             "title": {
@@ -1653,7 +1653,7 @@
                               "type": "string",
                               "nullable": true
                             },
-                            "canonical_url": {
+                            "canonicalUrl": {
                               "type": "string",
                               "nullable": true
                             },
@@ -1665,7 +1665,7 @@
                           "required": [
                             "title",
                             "description",
-                            "canonical_url",
+                            "canonicalUrl",
                             "thumbnail"
                           ],
                           "additionalProperties": false,
@@ -1679,17 +1679,17 @@
                         "from",
                         "type",
                         "text",
-                        "media_url",
-                        "media_kind",
-                        "poll_question",
+                        "mediaUrl",
+                        "mediaKind",
+                        "pollQuestion",
                         "status",
-                        "send_at",
-                        "created_at",
-                        "sent_at",
-                        "delivered_at",
-                        "read_at",
-                        "failed_at",
-                        "failure_reason"
+                        "sendAt",
+                        "createdAt",
+                        "sentAt",
+                        "deliveredAt",
+                        "readAt",
+                        "failedAt",
+                        "failureReason"
                       ],
                       "additionalProperties": false
                     }
@@ -8416,7 +8416,7 @@
           "Messages"
         ],
         "summary": "Send message",
-        "description": "Send a message immediately to a specific chat. The body is the same discriminated union as `POST /v1/scheduled-messages` minus `to` (derived from the URL path) and `send_at` (this endpoint is fire-and-forget). Variants: `text`, `media`, `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages` instead. Requires `messages:write`.",
+        "description": "Send a message immediately to a specific chat. The body is the same discriminated union as `POST /v1/scheduled-messages` minus `to` (derived from the URL path) and `sendAt` (this endpoint is fire-and-forget). Variants: `text`, `media`, `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages` instead. Requires `messages:write`.",
         "security": [
           {
             "BearerAuth": [
@@ -8460,7 +8460,7 @@
                         "maxLength": 2048,
                         "description": "Bare URL shortcut. Sends the URL as the body and force-enables link preview."
                       },
-                      "link_preview": {
+                      "linkPreview": {
                         "anyOf": [
                           {
                             "type": "boolean"
@@ -8477,7 +8477,7 @@
                                 "type": "string",
                                 "maxLength": 2048
                               },
-                              "canonical_url": {
+                              "canonicalUrl": {
                                 "type": "string",
                                 "format": "uri",
                                 "maxLength": 2048
@@ -8499,7 +8499,7 @@
                         "type": "string",
                         "pattern": "^\\+[1-9]\\d{6,14}$"
                       },
-                      "reply_to": {
+                      "replyTo": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 256,
@@ -8557,7 +8557,7 @@
                             "format": "uri",
                             "maxLength": 2048
                           },
-                          "data_base64": {
+                          "dataBase64": {
                             "type": "string",
                             "minLength": 1,
                             "maxLength": 15728640,
@@ -8593,7 +8593,7 @@
                         "type": "string",
                         "pattern": "^\\+[1-9]\\d{6,14}$"
                       },
-                      "reply_to": {
+                      "replyTo": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 256,
@@ -8662,7 +8662,7 @@
                             "minItems": 2,
                             "maxItems": 12
                           },
-                          "allow_multiple": {
+                          "allowMultiple": {
                             "type": "boolean",
                             "default": false
                           }
@@ -8677,7 +8677,7 @@
                         "type": "string",
                         "pattern": "^\\+[1-9]\\d{6,14}$"
                       },
-                      "reply_to": {
+                      "replyTo": {
                         "type": "string",
                         "minLength": 1,
                         "maxLength": 256,
@@ -8770,11 +8770,11 @@
                           "type": "string",
                           "nullable": true
                         },
-                        "media_url": {
+                        "mediaUrl": {
                           "type": "string",
                           "nullable": true
                         },
-                        "media_kind": {
+                        "mediaKind": {
                           "type": "string",
                           "enum": [
                             "image",
@@ -8787,7 +8787,7 @@
                           ],
                           "nullable": true
                         },
-                        "poll_question": {
+                        "pollQuestion": {
                           "type": "string",
                           "nullable": true
                         },
@@ -8802,40 +8802,40 @@
                             "failed"
                           ]
                         },
-                        "send_at": {
+                        "sendAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "created_at": {
+                        "createdAt": {
                           "type": "string",
                           "format": "date-time"
                         },
-                        "sent_at": {
+                        "sentAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "delivered_at": {
+                        "deliveredAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "read_at": {
+                        "readAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failed_at": {
+                        "failedAt": {
                           "type": "string",
                           "format": "date-time",
                           "nullable": true
                         },
-                        "failure_reason": {
+                        "failureReason": {
                           "type": "string",
                           "nullable": true
                         },
-                        "link_preview": {
+                        "linkPreview": {
                           "type": "object",
                           "properties": {
                             "title": {
@@ -8846,7 +8846,7 @@
                               "type": "string",
                               "nullable": true
                             },
-                            "canonical_url": {
+                            "canonicalUrl": {
                               "type": "string",
                               "nullable": true
                             },
@@ -8858,7 +8858,7 @@
                           "required": [
                             "title",
                             "description",
-                            "canonical_url",
+                            "canonicalUrl",
                             "thumbnail"
                           ],
                           "additionalProperties": false,
@@ -8872,17 +8872,17 @@
                         "from",
                         "type",
                         "text",
-                        "media_url",
-                        "media_kind",
-                        "poll_question",
+                        "mediaUrl",
+                        "mediaKind",
+                        "pollQuestion",
                         "status",
-                        "send_at",
-                        "created_at",
-                        "sent_at",
-                        "delivered_at",
-                        "read_at",
-                        "failed_at",
-                        "failure_reason"
+                        "sendAt",
+                        "createdAt",
+                        "sentAt",
+                        "deliveredAt",
+                        "readAt",
+                        "failedAt",
+                        "failureReason"
                       ],
                       "additionalProperties": false
                     }
@@ -13777,7 +13777,7 @@
             "default": 0,
             "description": "Number of items to skip before the page (default 0)."
           },
-          "chat_id": {
+          "chatId": {
             "type": "string",
             "pattern": "^[0-9]+(?:-[0-9]+)?@(?:c\\.us|g\\.us|newsletter)$",
             "description": "Filter to messages addressed to this WhatsApp JID. Matches the recipient stored on the queued/scheduled doc — for sends to a phone number, the JID is `<phone>@c.us`."
@@ -13792,7 +13792,7 @@
               "read",
               "failed"
             ],
-            "description": "Filter by lifecycle status. `scheduled` returns pending messages whose `send_at` is in the future; `queued` returns pending messages ready for immediate dispatch; `sending`/`delivered`/`read`/`failed` reflect post-dispatch states. Omit to return all statuses."
+            "description": "Filter by lifecycle status. `scheduled` returns pending messages whose `sendAt` is in the future; `queued` returns pending messages ready for immediate dispatch; `sending`/`delivered`/`read`/`failed` reflect post-dispatch states. Omit to return all statuses."
           },
           "searchToken": {
             "type": "string",
@@ -13865,7 +13865,7 @@
             "type": "string",
             "maxLength": 2048
           },
-          "canonical_url": {
+          "canonicalUrl": {
             "type": "string",
             "maxLength": 2048,
             "format": "uri"
@@ -13931,19 +13931,19 @@
             "maxLength": 4096,
             "description": "New text body. Replaces the previous text/caption."
           },
-          "media_url": {
+          "mediaUrl": {
             "type": "string",
             "maxLength": 2048,
             "format": "uri",
             "description": "Replace the attached media URL (https only)."
           },
-          "media_caption": {
+          "mediaCaption": {
             "type": "string",
             "minLength": 1,
             "maxLength": 1024,
             "description": "Replace the media's caption. When set alongside `text`, `text` wins."
           },
-          "send_at": {
+          "sendAt": {
             "type": "string",
             "format": "date-time",
             "description": "Reschedule. ISO 8601 datetime (UTC) in the future."
@@ -13962,7 +13962,7 @@
             "type": "string",
             "nullable": true
           },
-          "canonical_url": {
+          "canonicalUrl": {
             "type": "string",
             "nullable": true
           },
@@ -13974,7 +13974,7 @@
         "required": [
           "title",
           "description",
-          "canonical_url",
+          "canonicalUrl",
           "thumbnail"
         ],
         "additionalProperties": false
@@ -14010,11 +14010,11 @@
             "type": "string",
             "nullable": true
           },
-          "media_url": {
+          "mediaUrl": {
             "type": "string",
             "nullable": true
           },
-          "media_kind": {
+          "mediaKind": {
             "type": "string",
             "nullable": true,
             "enum": [
@@ -14027,7 +14027,7 @@
               "gif"
             ]
           },
-          "poll_question": {
+          "pollQuestion": {
             "type": "string",
             "nullable": true
           },
@@ -14042,40 +14042,40 @@
               "failed"
             ]
           },
-          "send_at": {
+          "sendAt": {
             "type": "string",
             "nullable": true,
             "format": "date-time"
           },
-          "created_at": {
+          "createdAt": {
             "type": "string",
             "format": "date-time"
           },
-          "sent_at": {
-            "type": "string",
-            "nullable": true,
-            "format": "date-time"
-          },
-          "delivered_at": {
+          "sentAt": {
             "type": "string",
             "nullable": true,
             "format": "date-time"
           },
-          "read_at": {
+          "deliveredAt": {
             "type": "string",
             "nullable": true,
             "format": "date-time"
           },
-          "failed_at": {
+          "readAt": {
             "type": "string",
             "nullable": true,
             "format": "date-time"
           },
-          "failure_reason": {
+          "failedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "failureReason": {
             "type": "string",
             "nullable": true
           },
-          "link_preview": {
+          "linkPreview": {
             "type": "object",
             "nullable": true,
             "properties": {
@@ -14087,7 +14087,7 @@
                 "type": "string",
                 "nullable": true
               },
-              "canonical_url": {
+              "canonicalUrl": {
                 "type": "string",
                 "nullable": true
               },
@@ -14099,7 +14099,7 @@
             "required": [
               "title",
               "description",
-              "canonical_url",
+              "canonicalUrl",
               "thumbnail"
             ],
             "additionalProperties": false
@@ -14112,17 +14112,17 @@
           "from",
           "type",
           "text",
-          "media_url",
-          "media_kind",
-          "poll_question",
+          "mediaUrl",
+          "mediaKind",
+          "pollQuestion",
           "status",
-          "send_at",
-          "created_at",
-          "sent_at",
-          "delivered_at",
-          "read_at",
-          "failed_at",
-          "failure_reason"
+          "sendAt",
+          "createdAt",
+          "sentAt",
+          "deliveredAt",
+          "readAt",
+          "failedAt",
+          "failureReason"
         ],
         "additionalProperties": false
       },
@@ -14346,7 +14346,7 @@
             "format": "uri",
             "description": "Bare URL shortcut. Sends the URL as the body and force-enables link preview."
           },
-          "link_preview": {
+          "linkPreview": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -14363,7 +14363,7 @@
                     "type": "string",
                     "maxLength": 2048
                   },
-                  "canonical_url": {
+                  "canonicalUrl": {
                     "type": "string",
                     "maxLength": 2048,
                     "format": "uri"
@@ -14384,7 +14384,7 @@
           "to": {
             "type": "string"
           },
-          "send_at": {
+          "sendAt": {
             "type": "string",
             "format": "date-time"
           },
@@ -14392,7 +14392,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
@@ -14451,7 +14451,7 @@
                 "maxLength": 2048,
                 "format": "uri"
               },
-              "data_base64": {
+              "dataBase64": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 15728640,
@@ -14486,7 +14486,7 @@
           "to": {
             "type": "string"
           },
-          "send_at": {
+          "sendAt": {
             "type": "string",
             "format": "date-time"
           },
@@ -14494,7 +14494,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
@@ -14564,7 +14564,7 @@
                 "minItems": 2,
                 "maxItems": 12
               },
-              "allow_multiple": {
+              "allowMultiple": {
                 "type": "boolean",
                 "default": false
               }
@@ -14578,7 +14578,7 @@
           "to": {
             "type": "string"
           },
-          "send_at": {
+          "sendAt": {
             "type": "string",
             "format": "date-time"
           },
@@ -14586,7 +14586,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
@@ -14649,7 +14649,7 @@
             "format": "uri",
             "description": "Bare URL shortcut. Sends the URL as the body and force-enables link preview."
           },
-          "link_preview": {
+          "linkPreview": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -14666,7 +14666,7 @@
                     "type": "string",
                     "maxLength": 2048
                   },
-                  "canonical_url": {
+                  "canonicalUrl": {
                     "type": "string",
                     "maxLength": 2048,
                     "format": "uri"
@@ -14688,7 +14688,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
@@ -14746,7 +14746,7 @@
                 "maxLength": 2048,
                 "format": "uri"
               },
-              "data_base64": {
+              "dataBase64": {
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 15728640,
@@ -14782,7 +14782,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
@@ -14851,7 +14851,7 @@
                 "minItems": 2,
                 "maxItems": 12
               },
-              "allow_multiple": {
+              "allowMultiple": {
                 "type": "boolean",
                 "default": false
               }
@@ -14866,7 +14866,7 @@
             "type": "string",
             "pattern": "^\\+[1-9]\\d{6,14}$"
           },
-          "reply_to": {
+          "replyTo": {
             "type": "string",
             "minLength": 1,
             "maxLength": 256,
