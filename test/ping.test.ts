@@ -12,16 +12,34 @@ describe("client.ping", () => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/ping");
       return jsonResponse(200, {
+        api: "ok",
         account_id: "acc_abc",
-        key_prefix: "xy12ab34",
-        scopes: ["messages:read"],
+        whatsapp_connections: [
+          { id: "gateway_acc_1_a", type: "gateway", connected: true },
+          { id: "whatsapp_acc_2_b", type: "regular", connected: true },
+        ],
       });
     });
     const result = await c.ping();
-    expect(typeof result.account_id).toBe("string");
+    expect(result.api).toBe("ok");
     expect(result.account_id).toBe("acc_abc");
-    expect(result.key_prefix).toBe("xy12ab34");
-    expect(result.scopes).toEqual(["messages:read"]);
+    expect(result.whatsapp_connections).toHaveLength(2);
+    expect(result.whatsapp_connections[0]).toEqual({ id: "gateway_acc_1_a", type: "gateway", connected: true });
+    expect(result.whatsapp_connections[1].type).toBe("regular");
+  });
+
+  it("accepts the empty connections shape with a message", async () => {
+    const c = mkClient(() =>
+      jsonResponse(200, {
+        api: "ok",
+        account_id: "acc_abc",
+        whatsapp_connections: [],
+        message: "No WhatsApp engine is connected for this workspace.",
+      }),
+    );
+    const result = await c.ping();
+    expect(result.whatsapp_connections).toEqual([]);
+    expect(result.message).toContain("No WhatsApp");
   });
 
   it("propagates AuthenticationError on 401", async () => {
@@ -36,7 +54,7 @@ describe("client.ping", () => {
   });
 
   it("raises ValidationError when required field is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
+    const c = mkClient(() => jsonResponse(200, { account_id: "acc_abc" }));
     await expect(c.ping()).rejects.toBeInstanceOf(ValidationError);
   });
 });
