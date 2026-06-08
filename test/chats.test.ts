@@ -308,7 +308,7 @@ describe("client.chats.listMessages", () => {
       expect(url.searchParams.get("query")).toBe("invoice");
       expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00Z");
       expect(url.searchParams.get("until")).toBe("2026-04-30T00:00:00Z");
-      expect(url.searchParams.get("message_types")).toBe("image,document");
+      expect(url.searchParams.get("messageTypes")).toBe("image,document");
       return jsonResponse(200, { data: [baseChatMessage()], has_more: false, next_cursor: null });
     });
     const page = await c.chats.listMessages("c1", {
@@ -316,7 +316,7 @@ describe("client.chats.listMessages", () => {
       query: "invoice",
       since: "2026-04-01T00:00:00Z",
       until: "2026-04-30T00:00:00Z",
-      message_types: ["image", "document"],
+      messageTypes: ["image", "document"],
     });
     expect(page.data[0]?.key).toContain("3EB0");
     expect(page.data[0]?.from_me).toBe(false);

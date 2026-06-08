@@ -40,7 +40,7 @@ export interface ListMessagesParams extends ListParams {
   query?: string;
   since?: string;
   until?: string;
-  message_types?: MessageType[];
+  messageTypes?: MessageType[];
 }
 
 export class ChatsResource extends BaseResource {
@@ -146,21 +146,21 @@ export class ChatsResource extends BaseResource {
   /**
    * List chat messages.
    *
-   * Cursor-paginated list of messages in a chat. Supports free-text search (`query`), date range (`since`/`until`), and message-kind filtering (`message_types`). Requires `chats:read`.
+   * Cursor-paginated list of messages in a chat. Supports free-text search (`query`), date range (`since`/`until`), and message-kind filtering (`messageTypes`). Requires `chats:read`.
    */
   async listMessages(
     chatId: string,
     params: ListMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<ChatMessage>> {
-    const { signal, mode, query, since, until, message_types, ...rest } = params;
+    const { signal, mode, query, since, until, messageTypes, ...rest } = params;
     const q = buildListQuery(rest);
     q.mode = mode ?? "latest";
     if (query !== undefined) q.query = query;
     if (since !== undefined) q.since = since;
     if (until !== undefined) q.until = until;
-    if (message_types !== undefined && message_types.length > 0) {
+    if (messageTypes !== undefined && messageTypes.length > 0) {
       // Server accepts comma-separated form for OpenAPI `style: form, explode: false`.
-      q.message_types = message_types.join(",");
+      q.messageTypes = messageTypes.join(",");
     }
     return this.client.request({
       method: "GET",

@@ -21,6 +21,10 @@ export {
 export { ContactsResource, type ListContactsParams } from "./contacts";
 export { EnginesResource } from "./engines";
 export {
+  MessagesResource,
+  type ListMessagesParams as ListAccountMessagesParams,
+} from "./messages";
+export {
   GroupsResource,
   type CreateGroupParams,
   type UpdateGroupParams,

@@ -10,6 +10,7 @@ import { ChatsResource } from "./resources/chats";
 import { ContactsResource } from "./resources/contacts";
 import { EnginesResource } from "./resources/engines";
 import { GroupsResource } from "./resources/groups";
+import { MessagesResource } from "./resources/messages";
 import { NewslettersResource } from "./resources/newsletters";
 import { ScheduledMessagesResource } from "./resources/scheduled-messages";
 import type { Ping } from "./types/ping";
@@ -36,6 +37,7 @@ export class Blueticks {
   readonly contacts: ContactsResource;
   readonly engines: EnginesResource;
   readonly groups: GroupsResource;
+  readonly messages: MessagesResource;
   readonly newsletters: NewslettersResource;
   readonly scheduledMessages: ScheduledMessagesResource;
   private readonly transport: Transport;
@@ -71,6 +73,7 @@ export class Blueticks {
     this.contacts = new ContactsResource(this);
     this.engines = new EnginesResource(this);
     this.groups = new GroupsResource(this);
+    this.messages = new MessagesResource(this);
     this.newsletters = new NewslettersResource(this);
     this.scheduledMessages = new ScheduledMessagesResource(this);
   }
