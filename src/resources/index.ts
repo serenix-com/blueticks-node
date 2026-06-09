@@ -16,13 +16,13 @@ export { CampaignsResource, type CreateCampaignParams } from "./campaigns";
 export {
   ChatsResource,
   type ListChatsParams,
-  type ListMessagesParams,
 } from "./chats";
 export { ContactsResource, type ListContactsParams } from "./contacts";
 export { EnginesResource } from "./engines";
 export {
   MessagesResource,
   type ListMessagesParams as ListAccountMessagesParams,
+  type ListChatMessagesParams,
 } from "./messages";
 export {
   GroupsResource,

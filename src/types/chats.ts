@@ -43,7 +43,7 @@ export const ChatRefSchema = z.object({
 export type ChatRef = z.infer<typeof ChatRefSchema>;
 
 /**
- * Response of `GET /v1/chats/{chat_id}/messages/{key}/ack`. WhatsApp ack
+ * Response of `GET /v1/messages/ack/{chat_id}/{key}`. WhatsApp ack
  * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
  * when no engine response.
  */
@@ -52,7 +52,7 @@ export const MessageAckSchema = z.object({
 });
 export type MessageAck = z.infer<typeof MessageAckSchema>;
 
-/** Response of `POST /v1/chats/{chat_id}/messages/load_older`. */
+/** Response of `POST /v1/messages/load_older/{chat_id}`. */
 export const LoadOlderMessagesResponseSchema = z.object({
   total_messages: z.number().int().nullable(),
   added: z.number().int().nullable(),
@@ -60,14 +60,14 @@ export const LoadOlderMessagesResponseSchema = z.object({
 });
 export type LoadOlderMessagesResponse = z.infer<typeof LoadOlderMessagesResponseSchema>;
 
-/** Response of `GET /v1/chats/{chat_id}/messages/{key}/media_url`. */
+/** Response of `GET /v1/messages/media_url/{chat_id}/{key}`. */
 export const MediaUrlResponseSchema = z.object({
   url: z.string().nullable(),
 });
 export type MediaUrlResponse = z.infer<typeof MediaUrlResponseSchema>;
 
 /**
- * Single entry in a `POST /v1/chats/message_acks` response. WhatsApp ack
+ * Single entry in a `POST /v1/messages/acks` response. WhatsApp ack
  * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
  * when no engine response.
  */
@@ -77,7 +77,7 @@ export const BatchMessageAckEntrySchema = z.object({
 });
 export type BatchMessageAckEntry = z.infer<typeof BatchMessageAckEntrySchema>;
 
-/** Response of `POST /v1/chats/message_acks`. */
+/** Response of `POST /v1/messages/acks`. */
 export const BatchMessageAcksResponseSchema = z.object({
   data: z.array(BatchMessageAckEntrySchema),
 });
@@ -115,6 +115,17 @@ export const ChatMessageSchema = z.object({
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+/**
+ * Single entry in a `GET /v1/messages/pinned/{chat_id}` response — a currently
+ * pinned message in the chat.
+ */
+export const PinnedMessageSchema = z.object({
+  key: z.string(),
+  chat_id: z.string(),
+  text: z.string().nullable(),
+});
+export type PinnedMessage = z.infer<typeof PinnedMessageSchema>;
+
 export const MediaUnavailableReasonSchema = z.enum([
   "expired",
   "fetching",
@@ -125,7 +136,7 @@ export const MediaUnavailableReasonSchema = z.enum([
 export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema>;
 
 /**
- * Flat body for `POST /v1/chats/{chat_id}/messages`. Same shape as
+ * Flat body for `POST /v1/messages/{chat_id}`. Same shape as
  * `SendMessageRequest` (scheduled-messages) minus `to` (taken from the URL
  * path) and `sendAt` (this endpoint is fire-and-forget). `type` is a
  * required validation-only discriminator (`text` | `media` | `poll`); the
