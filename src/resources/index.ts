@@ -35,10 +35,6 @@ export { NewslettersResource, type CreateNewsletterParams } from "./newsletters"
 export {
   ScheduledMessagesResource,
   type ListScheduledMessagesParams,
-  type SendScheduledMessageCommon,
   type SendScheduledMessageParams,
-  type SendTextScheduledMessageParams,
-  type SendMediaScheduledMessageParams,
-  type SendPollScheduledMessageParams,
   type UpdateScheduledMessageParams,
 } from "./scheduled-messages";

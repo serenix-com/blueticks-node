@@ -7,53 +7,62 @@ import { pageSchema, buildListQuery, type Page, type ListParams } from "../types
 
 const ScheduledMessagePageSchema = pageSchema(ScheduledMessageSchema);
 
-/** Shared optional fields present on every send-message variant. */
-export interface SendScheduledMessageCommon {
+/**
+ * Flat body for `POST /v1/scheduled-messages` (`SendMessageRequest`). `type`
+ * is a required validation-only discriminator (`text` | `media` | `poll`);
+ * the media/poll fields are flat (e.g. `mediaUrl`, `pollOptions`) and `text`
+ * doubles as the media caption. `idempotencyKey` and `signal` are SDK call
+ * options stripped before the request body.
+ */
+export interface SendScheduledMessageParams {
+  /** Validation discriminator: which family of fields is required. */
+  type: "text" | "media" | "poll";
+  /** Recipient (phone in E.164, JID, or chat id). */
   to: string;
+  /** Schedule the send for a future ISO 8601 datetime. Omit to send now. */
   sendAt?: string;
+  /** Text body (type=text) or media caption (type=media). 1–4096 chars. */
+  text?: string;
+  /** Bare URL shortcut for text sends — sends the URL and force-enables link preview. */
+  url?: string;
+  /**
+   * Controls the rich-preview card under a URL. `true` (default) auto-fetches
+   * when a URL is present, `false` never attaches one, an object is used verbatim.
+   */
+  linkPreview?:
+    | boolean
+    | {
+        title: string;
+        description?: string;
+        canonicalUrl?: string;
+        thumbnail?: string;
+      };
+  /** Media source URL (https only). Exactly one of mediaUrl / mediaDataBase64 for media sends. */
+  mediaUrl?: string;
+  /** Raw media bytes, base64-encoded. Alternative to `mediaUrl`. */
+  mediaDataBase64?: string;
+  /** Media kind. Optional — falls back to engine auto-detection. */
+  mediaKind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
+  /** Filename to attach to the media (type=media). */
+  mediaFilename?: string;
+  /** Poll question (type=poll). Required for poll sends. */
+  pollQuestion?: string;
+  /** Poll options (type=poll). 2–12 items. */
+  pollOptions?: string[];
+  /** Allow selecting multiple poll options (type=poll). Default false. */
+  pollAllowMultiple?: boolean;
+  /** Sender number in E.164 form, when the account has multiple connections. */
   from?: string;
+  /** Wire `key` of a prior message to quote-reply (from MessageResponse.key). */
   replyTo?: string;
+  /** JIDs to mention. `displays` is the rendered name list. */
+  mentions?: {
+    ids: string[];
+    displays?: string[];
+  };
   idempotencyKey?: string;
   signal?: AbortSignal;
 }
-
-/** Send a plain-text message. */
-export interface SendTextScheduledMessageParams extends SendScheduledMessageCommon {
-  type: "text";
-  text: string;
-  linkPreview?: boolean | {
-    title: string;
-    description?: string;
-    canonicalUrl?: string;
-    thumbnail?: string;
-  };
-}
-
-/** Send a media message (image, video, audio, document, sticker, voice). */
-export interface SendMediaScheduledMessageParams extends SendScheduledMessageCommon {
-  type: "media";
-  media: {
-    url: string;
-    kind?: "image" | "video" | "audio" | "document" | "sticker" | "voice";
-    caption?: string;
-    filename?: string;
-  };
-}
-
-/** Send a poll message. */
-export interface SendPollScheduledMessageParams extends SendScheduledMessageCommon {
-  type: "poll";
-  poll: {
-    question: string;
-    options: string[];
-    allowMultiple?: boolean;
-  };
-}
-
-export type SendScheduledMessageParams =
-  | SendTextScheduledMessageParams
-  | SendMediaScheduledMessageParams
-  | SendPollScheduledMessageParams;
 
 /** Subset of mutable fields accepted by `PATCH /v1/scheduled-messages/{id}`. */
 export interface UpdateScheduledMessageParams {
@@ -94,9 +103,9 @@ export class ScheduledMessagesResource extends BaseResource {
   }
 
   /**
-   * Send message.
+   * Schedule message.
    *
-   * Send a message via WhatsApp. The body is a discriminated union — set the `type` field to one of `text`, `media`, or `poll`.
+   * Send a message via WhatsApp. The body is flat — set `type` to one of `text`, `media`, or `poll`, then supply the matching fields (`text`, `mediaUrl`/`mediaDataBase64`, or `pollQuestion`/`pollOptions`). `text` doubles as the media caption. Optional `sendAt` schedules the send; omit it to send now.
    */
   async create(params: SendScheduledMessageParams): Promise<ScheduledMessage> {
     const { idempotencyKey, signal, ...body } = params;

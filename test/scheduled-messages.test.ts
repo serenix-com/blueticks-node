@@ -106,13 +106,15 @@ describe("client.scheduledMessages.create (text variant)", () => {
 });
 
 describe("client.scheduledMessages.create (media variant)", () => {
-  it("POSTs type:media with media object", async () => {
+  it("POSTs type:media with flat media fields", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
         to: "+15551230001",
-        media: { url: "https://cdn.example.com/x.pdf", kind: "document", filename: "receipt.pdf" },
+        mediaUrl: "https://cdn.example.com/x.pdf",
+        mediaKind: "document",
+        mediaFilename: "receipt.pdf",
       });
       return jsonResponse(
         201,
@@ -127,25 +129,50 @@ describe("client.scheduledMessages.create (media variant)", () => {
     const m = await c.scheduledMessages.create({
       type: "media",
       to: "+15551230001",
-      media: {
-        url: "https://cdn.example.com/x.pdf",
-        kind: "document",
-        filename: "receipt.pdf",
-      },
+      mediaUrl: "https://cdn.example.com/x.pdf",
+      mediaKind: "document",
+      mediaFilename: "receipt.pdf",
     });
     expect(m.type).toBe("media");
     expect(m.mediaKind).toBe("document");
   });
+
+  it("forwards mediaDataBase64 + text caption in camelCase", async () => {
+    const c = mkClient(async (req) => {
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({
+        type: "media",
+        to: "+15551230001",
+        mediaDataBase64: "AAAA",
+        mediaKind: "image",
+        mediaFilename: "x.png",
+        text: "look",
+      });
+      return jsonResponse(
+        201,
+        baseScheduledMessage({ type: "media", mediaKind: "image", text: "look" }),
+      );
+    });
+    await c.scheduledMessages.create({
+      type: "media",
+      to: "+15551230001",
+      mediaDataBase64: "AAAA",
+      mediaKind: "image",
+      mediaFilename: "x.png",
+      text: "look",
+    });
+  });
 });
 
 describe("client.scheduledMessages.create (poll variant)", () => {
-  it("POSTs type:poll with poll object", async () => {
+  it("POSTs type:poll with flat poll fields", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "poll",
         to: "+15551230001",
-        poll: { question: "Pizza?", options: ["Yes", "No"] },
+        pollQuestion: "Pizza?",
+        pollOptions: ["Yes", "No"],
       });
       return jsonResponse(
         201,
@@ -155,19 +182,22 @@ describe("client.scheduledMessages.create (poll variant)", () => {
     const m = await c.scheduledMessages.create({
       type: "poll",
       to: "+15551230001",
-      poll: { question: "Pizza?", options: ["Yes", "No"] },
+      pollQuestion: "Pizza?",
+      pollOptions: ["Yes", "No"],
     });
     expect(m.type).toBe("poll");
     expect(m.pollQuestion).toBe("Pizza?");
   });
 
-  it("forwards poll.allowMultiple in camelCase", async () => {
+  it("forwards pollAllowMultiple in camelCase", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "poll",
         to: "+15551230001",
-        poll: { question: "Pizza?", options: ["Yes", "No"], allowMultiple: true },
+        pollQuestion: "Pizza?",
+        pollOptions: ["Yes", "No"],
+        pollAllowMultiple: true,
       });
       return jsonResponse(
         201,
@@ -177,7 +207,9 @@ describe("client.scheduledMessages.create (poll variant)", () => {
     await c.scheduledMessages.create({
       type: "poll",
       to: "+15551230001",
-      poll: { question: "Pizza?", options: ["Yes", "No"], allowMultiple: true },
+      pollQuestion: "Pizza?",
+      pollOptions: ["Yes", "No"],
+      pollAllowMultiple: true,
     });
   });
 

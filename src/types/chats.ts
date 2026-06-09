@@ -125,61 +125,56 @@ export const MediaUnavailableReasonSchema = z.enum([
 export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema>;
 
 /**
- * Discriminated body for `POST /v1/chats/{chat_id}/messages`. Same shape as
+ * Flat body for `POST /v1/chats/{chat_id}/messages`. Same shape as
  * `SendMessageRequest` (scheduled-messages) minus `to` (taken from the URL
- * path) and `sendAt` (this endpoint is fire-and-forget). Variants: `text`,
- * `media`, `poll`.
+ * path) and `sendAt` (this endpoint is fire-and-forget). `type` is a
+ * required validation-only discriminator (`text` | `media` | `poll`); the
+ * media/poll fields are flat (e.g. `mediaUrl`, `pollOptions`) and `text`
+ * doubles as the media caption.
  */
-export type SendInChatRequest =
-  | {
-      type: "text";
-      text?: string;
-      url?: string;
-      linkPreview?:
-        | boolean
-        | {
-            title: string;
-            description?: string;
-            canonicalUrl?: string;
-            thumbnail?: string;
-          };
-      from?: string;
-      replyTo?: string;
-      mentions?: {
-        ids: string[];
-        displays?: string[];
+export interface SendInChatRequest {
+  /** Validation discriminator: which family of fields is required. */
+  type: "text" | "media" | "poll";
+  /** Text body (type=text) or media caption (type=media). 1–4096 chars. */
+  text?: string;
+  /** Bare URL shortcut for text sends — sends the URL and force-enables link preview. */
+  url?: string;
+  /**
+   * Controls the rich-preview card under a URL. `true` (default) auto-fetches
+   * when a URL is present, `false` never attaches one, an object is used verbatim.
+   */
+  linkPreview?:
+    | boolean
+    | {
+        title: string;
+        description?: string;
+        canonicalUrl?: string;
+        thumbnail?: string;
       };
-    }
-  | {
-      type: "media";
-      media: {
-        url?: string;
-        dataBase64?: string;
-        kind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
-        caption?: string;
-        filename?: string;
-      };
-      from?: string;
-      replyTo?: string;
-      mentions?: {
-        ids: string[];
-        displays?: string[];
-      };
-    }
-  | {
-      type: "poll";
-      poll: {
-        question: string;
-        options: string[];
-        allowMultiple?: boolean;
-      };
-      from?: string;
-      replyTo?: string;
-      mentions?: {
-        ids: string[];
-        displays?: string[];
-      };
-    };
+  /** Media source URL (https only). Exactly one of mediaUrl / mediaDataBase64 for media sends. */
+  mediaUrl?: string;
+  /** Raw media bytes, base64-encoded. Alternative to `mediaUrl`. */
+  mediaDataBase64?: string;
+  /** Media kind. Optional — falls back to engine auto-detection. */
+  mediaKind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
+  /** Filename to attach to the media (type=media). */
+  mediaFilename?: string;
+  /** Poll question (type=poll). Required for poll sends. */
+  pollQuestion?: string;
+  /** Poll options (type=poll). 2–12 items. */
+  pollOptions?: string[];
+  /** Allow selecting multiple poll options (type=poll). Default false. */
+  pollAllowMultiple?: boolean;
+  /** Sender number in E.164 form, when the account has multiple connections. */
+  from?: string;
+  /** Wire `key` of a prior message to quote-reply (from MessageResponse.key). */
+  replyTo?: string;
+  /** JIDs to mention. `displays` is the rendered name list. */
+  mentions?: {
+    ids: string[];
+    displays?: string[];
+  };
+}
 
 export const ChatMediaSchema = z.object({
   url: z.string().nullable(),

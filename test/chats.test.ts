@@ -236,17 +236,15 @@ describe("client.chats.sendMessage (text variant)", () => {
 });
 
 describe("client.chats.sendMessage (media variant)", () => {
-  it("POSTs type:media with media object", async () => {
+  it("POSTs type:media with flat media fields", async () => {
     const c = mkClient(async (req) => {
       expect(new URL(req.url).pathname).toBe("/v1/chats/c1/messages");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
-        media: {
-          url: "https://cdn.example.com/x.pdf",
-          kind: "document",
-          filename: "receipt.pdf",
-        },
+        mediaUrl: "https://cdn.example.com/x.pdf",
+        mediaKind: "document",
+        mediaFilename: "receipt.pdf",
       });
       return jsonResponse(
         201,
@@ -261,22 +259,22 @@ describe("client.chats.sendMessage (media variant)", () => {
     });
     const m = await c.chats.sendMessage("c1", {
       type: "media",
-      media: {
-        url: "https://cdn.example.com/x.pdf",
-        kind: "document",
-        filename: "receipt.pdf",
-      },
+      mediaUrl: "https://cdn.example.com/x.pdf",
+      mediaKind: "document",
+      mediaFilename: "receipt.pdf",
     });
     expect(m.type).toBe("media");
     expect(m.mediaKind).toBe("document");
   });
 
-  it("forwards camelCase wire fields (media.dataBase64, replyTo)", async () => {
+  it("forwards flat camelCase wire fields (mediaDataBase64, replyTo)", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
-        media: { dataBase64: "AAAA", kind: "image", filename: "x.png" },
+        mediaDataBase64: "AAAA",
+        mediaKind: "image",
+        mediaFilename: "x.png",
         replyTo: "msg_abc",
       });
       return jsonResponse(
@@ -286,19 +284,22 @@ describe("client.chats.sendMessage (media variant)", () => {
     });
     await c.chats.sendMessage("c1", {
       type: "media",
-      media: { dataBase64: "AAAA", kind: "image", filename: "x.png" },
+      mediaDataBase64: "AAAA",
+      mediaKind: "image",
+      mediaFilename: "x.png",
       replyTo: "msg_abc",
     });
   });
 });
 
 describe("client.chats.sendMessage (poll variant)", () => {
-  it("POSTs type:poll with poll object", async () => {
+  it("POSTs type:poll with flat poll fields", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "poll",
-        poll: { question: "Pizza?", options: ["Yes", "No"] },
+        pollQuestion: "Pizza?",
+        pollOptions: ["Yes", "No"],
       });
       return jsonResponse(
         201,
@@ -312,7 +313,8 @@ describe("client.chats.sendMessage (poll variant)", () => {
     });
     const m = await c.chats.sendMessage("c1", {
       type: "poll",
-      poll: { question: "Pizza?", options: ["Yes", "No"] },
+      pollQuestion: "Pizza?",
+      pollOptions: ["Yes", "No"],
     });
     expect(m.type).toBe("poll");
     expect(m.pollQuestion).toBe("Pizza?");
