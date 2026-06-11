@@ -21,7 +21,6 @@ function baseScheduledMessage(overrides: Record<string, unknown> = {}): Record<s
     id: "sm_1",
     key: null,
     to: "+15551230001",
-    from: null,
     type: "text",
     text: "hello",
     mediaUrl: null,
@@ -137,13 +136,13 @@ describe("client.scheduledMessages.create (media variant)", () => {
     expect(m.mediaKind).toBe("document");
   });
 
-  it("forwards mediaDataBase64 + text caption in camelCase", async () => {
+  it("forwards mediaBase64 + text caption in camelCase", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
         to: "+15551230001",
-        mediaDataBase64: "AAAA",
+        mediaBase64: "AAAA",
         mediaKind: "image",
         mediaFilename: "x.png",
         text: "look",
@@ -156,7 +155,7 @@ describe("client.scheduledMessages.create (media variant)", () => {
     await c.scheduledMessages.create({
       type: "media",
       to: "+15551230001",
-      mediaDataBase64: "AAAA",
+      mediaBase64: "AAAA",
       mediaKind: "image",
       mediaFilename: "x.png",
       text: "look",

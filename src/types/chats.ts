@@ -148,24 +148,10 @@ export interface SendInChatRequest {
   type: "text" | "media" | "poll";
   /** Text body (type=text) or media caption (type=media). 1–4096 chars. */
   text?: string;
-  /** Bare URL shortcut for text sends — sends the URL and force-enables link preview. */
-  url?: string;
-  /**
-   * Controls the rich-preview card under a URL. `true` (default) auto-fetches
-   * when a URL is present, `false` never attaches one, an object is used verbatim.
-   */
-  linkPreview?:
-    | boolean
-    | {
-        title: string;
-        description?: string;
-        canonicalUrl?: string;
-        thumbnail?: string;
-      };
-  /** Media source URL (https only). Exactly one of mediaUrl / mediaDataBase64 for media sends. */
+  /** Media source URL (https only). Exactly one of mediaUrl / mediaBase64 for media sends. */
   mediaUrl?: string;
   /** Raw media bytes, base64-encoded. Alternative to `mediaUrl`. */
-  mediaDataBase64?: string;
+  mediaBase64?: string;
   /** Media kind. Optional — falls back to engine auto-detection. */
   mediaKind?: "image" | "video" | "audio" | "document" | "sticker" | "voice" | "gif";
   /** Filename to attach to the media (type=media). */
@@ -176,8 +162,6 @@ export interface SendInChatRequest {
   pollOptions?: string[];
   /** Allow selecting multiple poll options (type=poll). Default false. */
   pollAllowMultiple?: boolean;
-  /** Sender number in E.164 form, when the account has multiple connections. */
-  from?: string;
   /** Wire `key` of a prior message to quote-reply (from MessageResponse.key). */
   replyTo?: string;
   /** JIDs to mention. `displays` is the rendered name list. */

@@ -22,7 +22,6 @@ export const ScheduledMessageSchema = z.object({
   id: z.string().nullable(),
   key: z.string().nullable(),
   to: z.string(),
-  from: z.string().nullable(),
   type: z.enum(["text", "media", "poll"]),
   text: z.string().nullable(),
   mediaUrl: z.string().nullable(),

@@ -127,7 +127,6 @@ function baseSentMessage(overrides: Record<string, unknown> = {}): Record<string
     id: null,
     key: "true_120363000000000000@g.us_3EB0XXXXXXXXXXXXXXXX",
     to: "120363000000000000@g.us",
-    from: null,
     type: "text",
     text: "hello",
     mediaUrl: null,
@@ -223,12 +222,12 @@ describe("client.messages.send (media variant)", () => {
     expect(m.mediaKind).toBe("document");
   });
 
-  it("forwards flat camelCase wire fields (mediaDataBase64, replyTo)", async () => {
+  it("forwards flat camelCase wire fields (mediaBase64, replyTo)", async () => {
     const c = mkClient(async (req) => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
-        mediaDataBase64: "AAAA",
+        mediaBase64: "AAAA",
         mediaKind: "image",
         mediaFilename: "x.png",
         replyTo: "msg_abc",
@@ -240,7 +239,7 @@ describe("client.messages.send (media variant)", () => {
     });
     await c.messages.send("c1", {
       type: "media",
-      mediaDataBase64: "AAAA",
+      mediaBase64: "AAAA",
       mediaKind: "image",
       mediaFilename: "x.png",
       replyTo: "msg_abc",

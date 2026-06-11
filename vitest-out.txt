@@ -1,0 +1,19 @@
+
+ RUN  v1.6.1 D:/dev2/Blueticks/blueticks-api/sdks/node
+
+ ✓ test/scheduled-messages.test.ts  (19 tests) 53ms
+ ✓ test/messages.test.ts  (31 tests) 71ms
+ ✓ test/chats.test.ts  (12 tests) 45ms
+
+ Test Files  3 passed (3)
+      Tests  62 passed (62)
+   Start at  19:40:57
+   Duration  11.88s (transform 2.27s, setup 1ms, collect 4.07s, tests 169ms, environment 1ms, prepare 611ms)
+
+close timed out after 10000ms
+Failed to terminate worker while running D:/dev2/Blueticks/blueticks-api/sdks/node/test/scheduled-messages.test.ts. 
+See https://vitest.dev/guide/common-errors.html#failed-to-terminate-worker for troubleshooting.
+Failed to terminate worker while running D:/dev2/Blueticks/blueticks-api/sdks/node/test/chats.test.ts. 
+See https://vitest.dev/guide/common-errors.html#failed-to-terminate-worker for troubleshooting.
+Tests closed successfully but something prevents Vite server from exiting
+You can try to identify the cause by enabling "hanging-process" reporter. See https://vitest.dev/config/#reporters
