@@ -17,7 +17,7 @@ const ScheduledMessagePageSchema = pageSchema(ScheduledMessageSchema);
 export interface SendScheduledMessageParams {
   /** Validation discriminator: which family of fields is required. */
   type: "text" | "media" | "poll";
-  /** Recipient (phone in E.164, JID, or chat id). */
+  /** Recipient (phone in international format, JID, or chat id). */
   to: string;
   /** Schedule the send for a future ISO 8601 datetime. Omit to send now. */
   sendAt?: string;
@@ -59,7 +59,7 @@ export interface UpdateScheduledMessageParams {
 /** Optional filters accepted by `GET /v1/scheduled-messages`. */
 export interface ListScheduledMessagesParams extends ListParams {
   chatId?: string;
-  status?: "scheduled" | "queued" | "sending" | "delivered" | "read" | "failed";
+  status?: "pending" | "confirmed" | "received" | "read" | "played" | "failed";
   q?: string;
 }
 
@@ -123,7 +123,7 @@ export class ScheduledMessagesResource extends BaseResource {
   /**
    * Update message.
    *
-   * Edit a previously-queued message that has not dispatched yet. Accepts a subset of `text`, `mediaUrl`, `mediaCaption`, `sendAt` — at least one is required. Returns 400 once the message has advanced past the editable window (status not in `pending`/`sending`).
+   * Edit a previously-pending message that has not dispatched yet. Accepts a subset of `text`, `mediaUrl`, `mediaCaption`, `sendAt` — at least one is required. Returns 400 once the message has advanced past the editable window (status is no longer `pending`).
    */
   async update(
     id: string,

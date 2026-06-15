@@ -39,7 +39,7 @@ describe("client.messages.list", () => {
       expect(req.method).toBe("GET");
       const url = new URL(req.url);
       expect(url.pathname).toBe("/v1/messages");
-      expect(url.searchParams.get("mode")).toBe("history");
+      expect(url.searchParams.get("order")).toBe("asc");
       expect(url.searchParams.get("query")).toBe("invoice");
       expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00Z");
       expect(url.searchParams.get("until")).toBe("2026-04-30T00:00:00Z");
@@ -52,7 +52,7 @@ describe("client.messages.list", () => {
       });
     });
     const page = await c.messages.list({
-      mode: "history",
+      order: "asc",
       query: "invoice",
       since: "2026-04-01T00:00:00Z",
       until: "2026-04-30T00:00:00Z",
@@ -65,11 +65,11 @@ describe("client.messages.list", () => {
     expect(page.has_more).toBe(false);
   });
 
-  it("defaults mode=latest and omits chatId when not provided", async () => {
+  it("omits order by default and omits chatId when not provided", async () => {
     const c = mkClient((req) => {
       const url = new URL(req.url);
       expect(url.pathname).toBe("/v1/messages");
-      expect(url.searchParams.get("mode")).toBe("latest");
+      expect(url.searchParams.has("order")).toBe(false);
       expect(url.searchParams.has("chatId")).toBe(false);
       return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
     });
@@ -95,7 +95,7 @@ describe("client.messages.listForChat", () => {
     const c = mkClient((req) => {
       const url = new URL(req.url);
       expect(url.pathname).toBe("/v1/messages/c1");
-      expect(url.searchParams.get("mode")).toBe("history");
+      expect(url.searchParams.get("order")).toBe("asc");
       expect(url.searchParams.get("query")).toBe("invoice");
       expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00Z");
       expect(url.searchParams.get("until")).toBe("2026-04-30T00:00:00Z");
@@ -103,7 +103,7 @@ describe("client.messages.listForChat", () => {
       return jsonResponse(200, { data: [baseChatMessage()], has_more: false, next_cursor: null });
     });
     const page = await c.messages.listForChat("c1", {
-      mode: "history",
+      order: "asc",
       query: "invoice",
       since: "2026-04-01T00:00:00Z",
       until: "2026-04-30T00:00:00Z",
@@ -113,9 +113,9 @@ describe("client.messages.listForChat", () => {
     expect(page.data[0]?.from_me).toBe(false);
   });
 
-  it("defaults mode=latest", async () => {
+  it("omits order by default", async () => {
     const c = mkClient((req) => {
-      expect(new URL(req.url).searchParams.get("mode")).toBe("latest");
+      expect(new URL(req.url).searchParams.has("order")).toBe(false);
       return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
     });
     await c.messages.listForChat("c1");
@@ -132,12 +132,13 @@ function baseSentMessage(overrides: Record<string, unknown> = {}): Record<string
     mediaUrl: null,
     mediaKind: null,
     pollQuestion: null,
-    status: "delivered",
+    status: "confirmed",
     sendAt: null,
     createdAt: "2026-04-23T10:00:00Z",
-    sentAt: "2026-04-23T10:00:00Z",
-    deliveredAt: "2026-04-23T10:00:00Z",
+    confirmedAt: "2026-04-23T10:00:00Z",
+    receivedAt: null,
     readAt: null,
+    playedAt: null,
     failedAt: null,
     failureReason: null,
     ...overrides,
@@ -155,7 +156,7 @@ describe("client.messages.send (text variant)", () => {
     });
     const m = await c.messages.send("c1", { type: "text", text: "hello" });
     expect(m.type).toBe("text");
-    expect(m.status).toBe("delivered");
+    expect(m.status).toBe("confirmed");
     expect(typeof m.key).toBe("string");
   });
 

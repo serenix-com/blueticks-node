@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const ScheduledMessageStatusSchema = z.enum([
-  "scheduled",
-  "queued",
-  "sending",
-  "delivered",
+  "pending",
+  "confirmed",
+  "received",
   "read",
+  "played",
   "failed",
 ]);
 
@@ -32,9 +32,10 @@ export const ScheduledMessageSchema = z.object({
   status: ScheduledMessageStatusSchema,
   sendAt: z.string().datetime({ offset: true }).nullable(),
   createdAt: z.string().datetime({ offset: true }),
-  sentAt: z.string().datetime({ offset: true }).nullable(),
-  deliveredAt: z.string().datetime({ offset: true }).nullable(),
+  confirmedAt: z.string().datetime({ offset: true }).nullable(),
+  receivedAt: z.string().datetime({ offset: true }).nullable(),
   readAt: z.string().datetime({ offset: true }).nullable(),
+  playedAt: z.string().datetime({ offset: true }).nullable(),
   failedAt: z.string().datetime({ offset: true }).nullable(),
   failureReason: z.string().nullable(),
   linkPreview: LinkPreviewResponseSchema.optional(),

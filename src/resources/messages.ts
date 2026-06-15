@@ -29,7 +29,7 @@ const ChatMessagePageSchema = pageSchema(ChatMessageSchema);
 const PinnedMessagePageSchema = pageSchema(PinnedMessageSchema);
 
 export interface ListMessagesParams extends ListParams {
-  mode?: "latest" | "history";
+  order?: "asc" | "desc";
   query?: string;
   since?: string;
   until?: string;
@@ -42,7 +42,7 @@ export interface ListMessagesParams extends ListParams {
 }
 
 export interface ListChatMessagesParams extends ListParams {
-  mode?: "latest" | "history";
+  order?: "asc" | "desc";
   query?: string;
   since?: string;
   until?: string;
@@ -58,9 +58,9 @@ export class MessagesResource extends BaseResource {
   async list(
     params: ListMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<ChatMessage>> {
-    const { signal, mode, query, since, until, messageTypes, chatId, ...rest } = params;
+    const { signal, order, query, since, until, messageTypes, chatId, ...rest } = params;
     const q = buildListQuery(rest);
-    q.mode = mode ?? "latest";
+    if (order !== undefined) q.order = order;
     if (query !== undefined) q.query = query;
     if (since !== undefined) q.since = since;
     if (until !== undefined) q.until = until;
@@ -87,9 +87,9 @@ export class MessagesResource extends BaseResource {
     chatId: string,
     params: ListChatMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<ChatMessage>> {
-    const { signal, mode, query, since, until, messageTypes, ...rest } = params;
+    const { signal, order, query, since, until, messageTypes, ...rest } = params;
     const q = buildListQuery(rest);
-    q.mode = mode ?? "latest";
+    if (order !== undefined) q.order = order;
     if (query !== undefined) q.query = query;
     if (since !== undefined) q.since = since;
     if (until !== undefined) q.until = until;

@@ -95,7 +95,7 @@ export class GroupsResource extends BaseResource {
   /**
    * Add member to group.
    *
-   * Add a participant to the group by chat_id (JID) or +E.164 phone. Requires `groups:write`.
+   * Add a participant to the group by chat_id (JID) or phone number in international format (e.g. +14155551234). Requires `groups:write`.
    */
   async addMember(
     groupId: string,

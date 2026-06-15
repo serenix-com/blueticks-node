@@ -26,12 +26,13 @@ function baseScheduledMessage(overrides: Record<string, unknown> = {}): Record<s
     mediaUrl: null,
     mediaKind: null,
     pollQuestion: null,
-    status: "scheduled",
+    status: "pending",
     sendAt: null,
     createdAt: "2026-04-23T10:00:00Z",
-    sentAt: null,
-    deliveredAt: null,
+    confirmedAt: null,
+    receivedAt: null,
     readAt: null,
+    playedAt: null,
     failedAt: null,
     failureReason: null,
     ...overrides,
@@ -55,7 +56,7 @@ describe("client.scheduledMessages.create (text variant)", () => {
     });
     expect(m.id).toBe("sm_1");
     expect(m.type).toBe("text");
-    expect(m.status).toBe("scheduled");
+    expect(m.status).toBe("pending");
   });
 
   it("sets Idempotency-Key header when idempotencyKey is provided", async () => {
@@ -245,13 +246,13 @@ describe("client.scheduledMessages.list", () => {
     const c = mkClient((req) => {
       const url = new URL(req.url);
       expect(url.searchParams.get("chatId")).toBe("15551230001@c.us");
-      expect(url.searchParams.get("status")).toBe("queued");
+      expect(url.searchParams.get("status")).toBe("pending");
       expect(url.searchParams.get("q")).toBe("hello");
       return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
     });
     await c.scheduledMessages.list({
       chatId: "15551230001@c.us",
-      status: "queued",
+      status: "pending",
       q: "hello",
     });
   });
@@ -276,12 +277,12 @@ describe("client.scheduledMessages.retrieve", () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/sm_xyz");
-      return jsonResponse(200, baseScheduledMessage({ id: "sm_xyz", status: "queued" }));
+      return jsonResponse(200, baseScheduledMessage({ id: "sm_xyz", status: "pending" }));
     });
     const m = await c.scheduledMessages.retrieve("sm_xyz");
     expect(typeof m.id).toBe("string");
     expect(m.id).toBe("sm_xyz");
-    expect(m.status).toBe("queued");
+    expect(m.status).toBe("pending");
   });
 
   it("propagates AuthenticationError on 401", async () => {
