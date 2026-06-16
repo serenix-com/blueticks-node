@@ -111,14 +111,14 @@ export function errorFromEnvelope(input: ErrorEnvelopeInput): BluetickError {
     (input.body as { error: unknown }).error !== null
   ) {
     const env = (input.body as {
-      error: { code?: unknown; message?: unknown; request_id?: unknown; details?: unknown };
+      error: { code?: unknown; message?: unknown; requestId?: unknown; details?: unknown };
     }).error;
     if (typeof env.code === "string") {
       const init: RateLimitErrorInit = {
         statusCode: input.statusCode,
         code: env.code,
         message: typeof env.message === "string" ? env.message : "",
-        requestId: typeof env.request_id === "string" ? env.request_id : null,
+        requestId: typeof env.requestId === "string" ? env.requestId : null,
         response: input.response,
         retryAfter: input.retryAfter ?? null,
         details: parseDetails(env.details),

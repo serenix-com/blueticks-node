@@ -12,7 +12,7 @@ function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
 
 function authErr() {
   return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", request_id: "req_a" },
+    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
   });
 }
 
@@ -21,7 +21,7 @@ const fullNewsletter = {
   name: "Acme Updates",
   description: "Weekly news from Acme Corp.",
   owner: "15551234567@s.whatsapp.net",
-  created_at: "2026-01-15T09:00:00Z",
+  createdAt: "2026-01-15T09:00:00Z",
   subscribers: 412,
   invite: "AbCdEfGhIjKlMn",
   verification: "VERIFIED",

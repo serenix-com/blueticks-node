@@ -41,14 +41,6 @@ export interface ListMessagesParams extends ListParams {
   chatId?: string;
 }
 
-export interface ListChatMessagesParams extends ListParams {
-  order?: "asc" | "desc";
-  query?: string;
-  since?: string;
-  until?: string;
-  messageTypes?: MessageType[];
-}
-
 export class MessagesResource extends BaseResource {
   /**
    * List messages (all chats).
@@ -72,34 +64,6 @@ export class MessagesResource extends BaseResource {
     return this.client.request({
       method: "GET",
       path: "/v1/messages",
-      query: q,
-      schema: ChatMessagePageSchema,
-      signal,
-    });
-  }
-
-  /**
-   * List messages.
-   *
-   * Offset-paginated list of messages in a chat. Supports free-text search (`searchToken`), date range (`since`/`until`), and message-kind filtering (`messageTypes`). Requires `chats:read`.
-   */
-  async listForChat(
-    chatId: string,
-    params: ListChatMessagesParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<ChatMessage>> {
-    const { signal, order, query, since, until, messageTypes, ...rest } = params;
-    const q = buildListQuery(rest);
-    if (order !== undefined) q.order = order;
-    if (query !== undefined) q.query = query;
-    if (since !== undefined) q.since = since;
-    if (until !== undefined) q.until = until;
-    if (messageTypes !== undefined && messageTypes.length > 0) {
-      // Server accepts comma-separated form for OpenAPI `style: form, explode: false`.
-      q.messageTypes = messageTypes.join(",");
-    }
-    return this.client.request({
-      method: "GET",
-      path: `/v1/messages/${encodeURIComponent(chatId)}`,
       query: q,
       schema: ChatMessagePageSchema,
       signal,
@@ -132,13 +96,13 @@ export class MessagesResource extends BaseResource {
    * Fetch a single message by its WhatsApp message key. Requires `chats:read`.
    */
   async get(
-    chatId: string,
-    key: string,
-    opts: { signal?: AbortSignal } = {},
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
   ): Promise<ChatMessage> {
     return this.client.request({
       method: "GET",
-      path: `/v1/messages/${encodeURIComponent(chatId)}/${encodeURIComponent(key)}`,
+      path: `/v1/messages/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: ChatMessageSchema,
       signal: opts.signal,
     });
@@ -150,13 +114,13 @@ export class MessagesResource extends BaseResource {
    * Returns the WhatsApp ack value for a sent message: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played. Requires `chats:read`.
    */
   async getAck(
-    chatId: string,
-    key: string,
-    opts: { signal?: AbortSignal } = {},
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
   ): Promise<MessageAck> {
     return this.client.request({
       method: "GET",
-      path: `/v1/messages/ack/${encodeURIComponent(chatId)}/${encodeURIComponent(key)}`,
+      path: `/v1/messages/ack/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: MessageAckSchema,
       signal: opts.signal,
     });
@@ -168,15 +132,53 @@ export class MessagesResource extends BaseResource {
    * Add or replace your reaction to a message. Pass an empty `emoji` string to remove. Requires `chats:write`.
    */
   async react(
-    chatId: string,
-    key: string,
+    waMessageKey: string,
     body: { emoji: string },
-    opts: { signal?: AbortSignal } = {},
+    opts: { chatId?: string; signal?: AbortSignal } = {},
   ): Promise<OkResponse> {
     return this.client.request({
       method: "POST",
-      path: `/v1/messages/reactions/${encodeURIComponent(chatId)}/${encodeURIComponent(key)}`,
+      path: `/v1/messages/reactions/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       body,
+      schema: OkResponseSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Pin message.
+   *
+   * Pin a message to the top of its chat. Optionally pass a `duration` (seconds)
+   * to control when the pin expires — defaults to 7 days. Requires `chats:write`.
+   */
+  async pin(
+    waMessageKey: string,
+    opts: { duration?: number; chatId?: string; signal?: AbortSignal } = {},
+  ): Promise<OkResponse> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/messages/pin/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
+      body: opts.duration !== undefined ? { duration: opts.duration } : {},
+      schema: OkResponseSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Unpin message.
+   *
+   * Remove an existing pin from a message. Requires `chats:write`.
+   */
+  async unpin(
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
+  ): Promise<OkResponse> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/messages/unpin/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: OkResponseSchema,
       signal: opts.signal,
     });
@@ -203,20 +205,20 @@ export class MessagesResource extends BaseResource {
    * Get message media.
    *
    * Download the media attached to a WhatsApp message (image, video, document, audio).
-   * Returns either a hosted URL (`url`) or inline `data_base64`, plus mimetype + filename.
+   * Returns either a hosted URL (`url`) or inline `dataBase64`, plus mimetype + filename.
    *
    * CAVEAT: for own-sent newsletter media, the bytes returned may be a WA-generated
-   * preview JPEG (~7KB) rather than the original — `original_quality` is `false` when
+   * preview JPEG (~7KB) rather than the original — `originalQuality` is `false` when
    * this fallback is in effect. Requires `chats:read`.
    */
   async getMedia(
-    chatId: string,
-    key: string,
-    opts: { signal?: AbortSignal } = {},
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
   ): Promise<ChatMedia> {
     return this.client.request({
       method: "GET",
-      path: `/v1/messages/media/${encodeURIComponent(chatId)}/${encodeURIComponent(key)}`,
+      path: `/v1/messages/media/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: ChatMediaSchema,
       signal: opts.signal,
     });
@@ -225,16 +227,16 @@ export class MessagesResource extends BaseResource {
   /**
    * Get message media URL.
    *
-   * Returns a hosted URL for the message media without inlining bytes. Faster + cheaper than `media` when the caller can fetch the URL themselves. Same `media_unavailable` semantics. Requires `chats:read`.
+   * Returns a hosted URL for the message media without inlining bytes. Faster + cheaper than `media` when the caller can fetch the URL themselves. Same `mediaUnavailable` semantics. Requires `chats:read`.
    */
   async getMediaUrl(
-    chatId: string,
-    key: string,
-    opts: { signal?: AbortSignal } = {},
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
   ): Promise<MediaUrlResponse> {
     return this.client.request({
       method: "GET",
-      path: `/v1/messages/media_url/${encodeURIComponent(chatId)}/${encodeURIComponent(key)}`,
+      path: `/v1/messages/media_url/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: MediaUrlResponseSchema,
       signal: opts.signal,
     });
@@ -246,7 +248,7 @@ export class MessagesResource extends BaseResource {
    * Get delivery status for up to 200 sent messages in one call. Useful for campaign dashboards / status reconciliation. Requires `chats:read`.
    */
   async batchAcks(
-    body: { message_keys: string[]; chat_id?: string },
+    body: { messageKeys: string[]; chatId?: string },
     opts: { signal?: AbortSignal } = {},
   ): Promise<BatchMessageAcksResponse> {
     return this.client.request({

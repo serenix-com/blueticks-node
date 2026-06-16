@@ -22,7 +22,6 @@ export { EnginesResource } from "./engines";
 export {
   MessagesResource,
   type ListMessagesParams as ListAccountMessagesParams,
-  type ListChatMessagesParams,
 } from "./messages";
 export {
   GroupsResource,

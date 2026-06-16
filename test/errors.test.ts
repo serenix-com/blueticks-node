@@ -58,7 +58,7 @@ describe("errorFromEnvelope", () => {
   ])("status %i → %s maps to typed exception", (status, code, Cls) => {
     const e = errorFromEnvelope({
       statusCode: status,
-      body: { error: { code, message: "m", request_id: "r" } },
+      body: { error: { code, message: "m", requestId: "r" } },
       response: null,
     });
     expect(e).toBeInstanceOf(Cls);
@@ -88,7 +88,7 @@ describe("errorFromEnvelope", () => {
         error: {
           code: "invalid_request",
           message: "contacts.0.to: Invalid",
-          request_id: "r",
+          requestId: "r",
           details: [
             { path: "contacts.0.to", code: "invalid_string", message: "must be E.164" },
           ],
@@ -104,7 +104,7 @@ describe("errorFromEnvelope", () => {
   it("leaves details=null when the envelope has none", () => {
     const e = errorFromEnvelope({
       statusCode: 400,
-      body: { error: { code: "invalid_request", message: "x", request_id: "r" } },
+      body: { error: { code: "invalid_request", message: "x", requestId: "r" } },
       response: null,
     });
     expect(e.details).toBeNull();
@@ -113,7 +113,7 @@ describe("errorFromEnvelope", () => {
   it("ignores non-array details payloads", () => {
     const e = errorFromEnvelope({
       statusCode: 400,
-      body: { error: { code: "invalid_request", message: "x", request_id: "r", details: "oops" } },
+      body: { error: { code: "invalid_request", message: "x", requestId: "r", details: "oops" } },
       response: null,
     });
     expect(e.details).toBeNull();
@@ -122,7 +122,7 @@ describe("errorFromEnvelope", () => {
   it("attaches retryAfter to RateLimitError", () => {
     const e = errorFromEnvelope({
       statusCode: 429,
-      body: { error: { code: "rate_limited", message: "slow", request_id: "r" } },
+      body: { error: { code: "rate_limited", message: "slow", requestId: "r" } },
       response: null,
       retryAfter: 30,
     });

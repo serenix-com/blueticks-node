@@ -6,8 +6,8 @@ import { z } from "zod";
  * (which is an audience member row, a different concept).
  */
 export const WhatsAppContactSchema = z.object({
-  chat_id: z.string(),
+  chatId: z.string(),
   name: z.string().nullable(),
-  is_business: z.boolean(),
+  isBusiness: z.boolean(),
 });
 export type WhatsAppContact = z.infer<typeof WhatsAppContactSchema>;

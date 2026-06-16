@@ -15,7 +15,7 @@ describe("client.account.retrieve", () => {
         id: "acc_1",
         name: "Acme",
         timezone: "America/New_York",
-        created_at: "2026-04-22T10:00:00Z",
+        createdAt: "2026-04-22T10:00:00Z",
       });
     });
     const result = await c.account.retrieve();
@@ -23,12 +23,12 @@ describe("client.account.retrieve", () => {
     expect(result.id).toBe("acc_1");
     expect(result.name).toBe("Acme");
     expect(result.timezone).toBe("America/New_York");
-    expect(result.created_at).toBe("2026-04-22T10:00:00Z");
+    expect(result.createdAt).toBe("2026-04-22T10:00:00Z");
   });
 
   it("accepts null timezone", async () => {
     const c = mkClient(() =>
-      jsonResponse(200, { id: "acc_2", name: "Nobody", timezone: null, created_at: "2026-01-01T00:00:00Z" }),
+      jsonResponse(200, { id: "acc_2", name: "Nobody", timezone: null, createdAt: "2026-01-01T00:00:00Z" }),
     );
     const result = await c.account.retrieve();
     expect(result.timezone).toBeNull();
@@ -36,7 +36,7 @@ describe("client.account.retrieve", () => {
 
   it("propagates AuthenticationError on 401", async () => {
     const c = mkClient(() =>
-      jsonResponse(401, { error: { code: "authentication_required", message: "bad key", request_id: "req_a" } }),
+      jsonResponse(401, { error: { code: "authentication_required", message: "bad key", requestId: "req_a" } }),
     );
     const err = await c.account.retrieve().catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);

@@ -10,8 +10,8 @@ function baseAudience(overrides: Record<string, unknown> = {}): Record<string, u
   return {
     id: "aud_1",
     name: "VIPs",
-    contact_count: 0,
-    created_at: "2026-04-23T10:00:00Z",
+    contactCount: 0,
+    createdAt: "2026-04-23T10:00:00Z",
     ...overrides,
   };
 }
@@ -21,7 +21,7 @@ function baseContact(overrides: Record<string, unknown> = {}): Record<string, un
     id: "ct_1",
     to: "+15551230001",
     variables: {},
-    added_at: "2026-04-23T10:00:00Z",
+    addedAt: "2026-04-23T10:00:00Z",
     ...overrides,
   };
 }
@@ -59,7 +59,7 @@ describe("client.audiences", () => {
       const u = new URL(req.url);
       expect(u.pathname).toBe("/v1/audiences/aud_1");
       expect(u.searchParams.get("page")).toBe("2");
-      return jsonResponse(200, baseAudience({ page: 2, has_more: false, contacts: [] }));
+      return jsonResponse(200, baseAudience({ page: 2, hasMore: false, contacts: [] }));
     });
     const a = await c.audiences.get("aud_1", { page: 2 });
     expect(a.page).toBe(2);
@@ -92,7 +92,7 @@ describe("client.audiences", () => {
       expect(new URL(req.url).pathname).toBe("/v1/audiences/aud_1/contacts");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({ contacts: [{ to: "+15551230002" }] });
-      return jsonResponse(200, { added: 1, contact_count: 1 });
+      return jsonResponse(200, { added: 1, contactCount: 1 });
     });
     const r = await c.audiences.appendContacts("aud_1", [{ to: "+15551230002" }]);
     expect(r.added).toBe(1);

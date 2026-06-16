@@ -12,21 +12,21 @@ function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
 
 function authErr() {
   return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", request_id: "req_a" },
+    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
   });
 }
 
 function baseChatMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     key: "true_120363000000000000@g.us_3EB0XXXXXXXXXXXXXXXX",
-    chat_id: "120363000000000000@g.us",
+    chatId: "120363000000000000@g.us",
     from: "15551230001@c.us",
     timestamp: "2026-04-23T10:00:00Z",
     text: "hello",
     type: "chat",
-    from_me: false,
+    fromMe: false,
     ack: 3,
-    media_url: null,
+    mediaUrl: null,
     caption: null,
     filename: null,
     ...overrides,
@@ -61,7 +61,7 @@ describe("client.messages.list", () => {
     });
     expect(page.data).toHaveLength(1);
     expect(page.data[0]?.key).toContain("3EB0");
-    expect(page.data[0]?.from_me).toBe(false);
+    expect(page.data[0]?.fromMe).toBe(false);
     expect(page.has_more).toBe(false);
   });
 
@@ -87,38 +87,6 @@ describe("client.messages.list", () => {
   it("raises ValidationError when required field is missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(c.messages.list()).rejects.toBeInstanceOf(ValidationError);
-  });
-});
-
-describe("client.messages.listForChat", () => {
-  it("encodes query params and returns Page<ChatMessage>", async () => {
-    const c = mkClient((req) => {
-      const url = new URL(req.url);
-      expect(url.pathname).toBe("/v1/messages/c1");
-      expect(url.searchParams.get("order")).toBe("asc");
-      expect(url.searchParams.get("query")).toBe("invoice");
-      expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00Z");
-      expect(url.searchParams.get("until")).toBe("2026-04-30T00:00:00Z");
-      expect(url.searchParams.get("messageTypes")).toBe("image,document");
-      return jsonResponse(200, { data: [baseChatMessage()], has_more: false, next_cursor: null });
-    });
-    const page = await c.messages.listForChat("c1", {
-      order: "asc",
-      query: "invoice",
-      since: "2026-04-01T00:00:00Z",
-      until: "2026-04-30T00:00:00Z",
-      messageTypes: ["image", "document"],
-    });
-    expect(page.data[0]?.key).toContain("3EB0");
-    expect(page.data[0]?.from_me).toBe(false);
-  });
-
-  it("omits order by default", async () => {
-    const c = mkClient((req) => {
-      expect(new URL(req.url).searchParams.has("order")).toBe(false);
-      return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
-    });
-    await c.messages.listForChat("c1");
   });
 });
 
@@ -278,15 +246,27 @@ describe("client.messages.send (poll variant)", () => {
 });
 
 describe("client.messages.get", () => {
-  it("GETs single message", async () => {
+  it("GETs single message by waMessageKey", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/c1/k1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/k1");
+      expect(new URL(req.url).searchParams.has("chatId")).toBe(false);
       return jsonResponse(200, baseChatMessage({ key: "k1" }));
     });
-    const m = await c.messages.get("c1", "k1");
+    const m = await c.messages.get("k1");
     expect(m.key).toBe("k1");
     expect(m.text).toBe("hello");
+  });
+
+  it("forwards optional chatId query param", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.pathname).toBe("/v1/messages/k1");
+      expect(url.searchParams.get("chatId")).toBe("c1@c.us");
+      return jsonResponse(200, baseChatMessage({ key: "k1" }));
+    });
+    const m = await c.messages.get("k1", { chatId: "c1@c.us" });
+    expect(m.key).toBe("k1");
   });
 });
 
@@ -294,22 +274,25 @@ describe("client.messages.getAck", () => {
   it("returns typed MessageAck", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/ack/c1/k1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/ack/k1");
       return jsonResponse(200, { ack: 3 });
     });
-    const r = await c.messages.getAck("c1", "k1");
+    const r = await c.messages.getAck("k1");
     expect(r.ack).toBe(3);
   });
 
-  it("accepts null ack", async () => {
-    const c = mkClient(() => jsonResponse(200, { ack: null }));
-    const r = await c.messages.getAck("c1", "k1");
+  it("accepts null ack and forwards chatId query param", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
+      return jsonResponse(200, { ack: null });
+    });
+    const r = await c.messages.getAck("k1", { chatId: "c1@c.us" });
     expect(r.ack).toBeNull();
   });
 
   it("raises ValidationError when ack is missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
-    await expect(c.messages.getAck("c1", "k1")).rejects.toBeInstanceOf(ValidationError);
+    await expect(c.messages.getAck("k1")).rejects.toBeInstanceOf(ValidationError);
   });
 });
 
@@ -317,13 +300,21 @@ describe("client.messages.react", () => {
   it("POSTs the body and returns OkResponse", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/reactions/c1/k1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/reactions/k1");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({ emoji: "👍" });
       return jsonResponse(200, { ok: true });
     });
-    const r = await c.messages.react("c1", "k1", { emoji: "👍" });
+    const r = await c.messages.react("k1", { emoji: "👍" });
     expect(r.ok).toBe(true);
+  });
+
+  it("forwards optional chatId query param", async () => {
+    const c = mkClient(async (req) => {
+      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
+      return jsonResponse(200, { ok: true });
+    });
+    await c.messages.react("k1", { emoji: "👍" }, { chatId: "c1@c.us" });
   });
 });
 
@@ -332,25 +323,25 @@ describe("client.messages.loadOlder", () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/messages/load_older/c1");
-      return jsonResponse(200, { total_messages: 1500, added: 200, can_load_more: true });
+      return jsonResponse(200, { totalMessages: 1500, added: 200, canLoadMore: true });
     });
     const r = await c.messages.loadOlder("c1");
-    expect(r.total_messages).toBe(1500);
+    expect(r.totalMessages).toBe(1500);
     expect(r.added).toBe(200);
-    expect(r.can_load_more).toBe(true);
+    expect(r.canLoadMore).toBe(true);
   });
 
-  it("accepts null total_messages and added", async () => {
+  it("accepts null totalMessages and added", async () => {
     const c = mkClient(() =>
-      jsonResponse(200, { total_messages: null, added: null, can_load_more: false }),
+      jsonResponse(200, { totalMessages: null, added: null, canLoadMore: false }),
     );
     const r = await c.messages.loadOlder("c1");
-    expect(r.total_messages).toBeNull();
-    expect(r.can_load_more).toBe(false);
+    expect(r.totalMessages).toBeNull();
+    expect(r.canLoadMore).toBe(false);
   });
 
-  it("raises ValidationError when can_load_more is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, { total_messages: 1, added: 1 }));
+  it("raises ValidationError when canLoadMore is missing", async () => {
+    const c = mkClient(() => jsonResponse(200, { totalMessages: 1, added: 1 }));
     await expect(c.messages.loadOlder("c1")).rejects.toBeInstanceOf(ValidationError);
   });
 });
@@ -358,19 +349,35 @@ describe("client.messages.loadOlder", () => {
 describe("client.messages.getMedia", () => {
   it("returns typed ChatMedia", async () => {
     const c = mkClient((req) => {
-      expect(new URL(req.url).pathname).toBe("/v1/messages/media/c1/k1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/media/k1");
       return jsonResponse(200, {
         url: "https://cdn.example/x.png",
         mimetype: "image/png",
         filename: "x.png",
-        data_base64: null,
-        original_quality: true,
-        media_unavailable: null,
+        dataBase64: null,
+        originalQuality: true,
+        mediaUnavailable: null,
       });
     });
-    const r = await c.messages.getMedia("c1", "k1");
+    const r = await c.messages.getMedia("k1");
     expect(r.mimetype).toBe("image/png");
-    expect(r.original_quality).toBe(true);
+    expect(r.originalQuality).toBe(true);
+  });
+
+  it("forwards optional chatId query param", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
+      return jsonResponse(200, {
+        url: null,
+        mimetype: null,
+        filename: null,
+        dataBase64: null,
+        originalQuality: null,
+        mediaUnavailable: "fetching",
+      });
+    });
+    const r = await c.messages.getMedia("k1", { chatId: "c1@c.us" });
+    expect(r.mediaUnavailable).toBe("fetching");
   });
 });
 
@@ -378,32 +385,32 @@ describe("client.messages.getMediaUrl", () => {
   it("returns typed MediaUrlResponse", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/media_url/c1/k1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/media_url/k1");
       return jsonResponse(200, { url: "https://cdn.example/x.jpg" });
     });
-    const r = await c.messages.getMediaUrl("c1", "k1");
+    const r = await c.messages.getMediaUrl("k1");
     expect(r.url).toBe("https://cdn.example/x.jpg");
   });
 
   it("accepts null url", async () => {
     const c = mkClient(() => jsonResponse(200, { url: null }));
-    const r = await c.messages.getMediaUrl("c1", "k1");
+    const r = await c.messages.getMediaUrl("k1");
     expect(r.url).toBeNull();
   });
 
   it("raises ValidationError when url is missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
-    await expect(c.messages.getMediaUrl("c1", "k1")).rejects.toBeInstanceOf(ValidationError);
+    await expect(c.messages.getMediaUrl("k1")).rejects.toBeInstanceOf(ValidationError);
   });
 });
 
 describe("client.messages.batchAcks", () => {
-  it("POSTs message_keys and returns BatchMessageAcksResponse", async () => {
+  it("POSTs messageKeys and returns BatchMessageAcksResponse", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/messages/acks");
       const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ message_keys: ["k1", "k2"] });
+      expect(body).toEqual({ messageKeys: ["k1", "k2"] });
       return jsonResponse(200, {
         data: [
           { key: "k1", ack: 3 },
@@ -411,7 +418,7 @@ describe("client.messages.batchAcks", () => {
         ],
       });
     });
-    const r = await c.messages.batchAcks({ message_keys: ["k1", "k2"] });
+    const r = await c.messages.batchAcks({ messageKeys: ["k1", "k2"] });
     expect(r.data).toHaveLength(2);
     expect(r.data[0]?.key).toBe("k1");
     expect(r.data[0]?.ack).toBe(3);
@@ -421,13 +428,13 @@ describe("client.messages.batchAcks", () => {
   it("raises ValidationError when data is missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(
-      c.messages.batchAcks({ message_keys: ["k1"] }),
+      c.messages.batchAcks({ messageKeys: ["k1"] }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
   it("propagates AuthenticationError on 401", async () => {
     const c = mkClient(() => authErr());
-    const err = await c.messages.batchAcks({ message_keys: ["k1"] }).catch((e) => e);
+    const err = await c.messages.batchAcks({ messageKeys: ["k1"] }).catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);
   });
 });
@@ -438,7 +445,7 @@ describe("client.messages.listPinned", () => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/messages/pinned/c1");
       return jsonResponse(200, {
-        data: [{ key: "k1", chat_id: "c1", text: "pinned note" }],
+        data: [{ key: "k1", chatId: "c1", text: "pinned note" }],
         has_more: false,
         next_cursor: null,
       });
@@ -452,7 +459,7 @@ describe("client.messages.listPinned", () => {
   it("accepts null text", async () => {
     const c = mkClient(() =>
       jsonResponse(200, {
-        data: [{ key: "k1", chat_id: "c1", text: null }],
+        data: [{ key: "k1", chatId: "c1", text: null }],
         has_more: false,
         next_cursor: null,
       }),

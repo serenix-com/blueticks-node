@@ -12,7 +12,7 @@ function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
 
 function authErr() {
   return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", request_id: "req_a" },
+    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
   });
 }
 
@@ -22,14 +22,14 @@ function baseGroup(overrides: Record<string, unknown> = {}): Record<string, unkn
     name: "Engineering",
     description: "Eng channel",
     owner: "15551230001@c.us",
-    created_at: "2026-04-23T10:00:00Z",
-    last_message_at: "2026-04-23T11:00:00Z",
-    participant_count: 3,
+    createdAt: "2026-04-23T10:00:00Z",
+    lastMessageAt: "2026-04-23T11:00:00Z",
+    participantCount: 3,
     announce: false,
     restrict: false,
     participants: [
-      { chat_id: "15551230001@c.us", is_admin: true, is_super_admin: true, name: "Alice" },
-      { chat_id: "15551230002@c.us", is_admin: false, is_super_admin: false, name: null },
+      { chatId: "15551230001@c.us", isAdmin: true, isSuperAdmin: true, name: "Alice" },
+      { chatId: "15551230002@c.us", isAdmin: false, isSuperAdmin: false, name: null },
     ],
     ...overrides,
   };
@@ -86,7 +86,7 @@ describe("client.groups.create", () => {
       participants: ["15551230001@c.us", "+15551230002"],
     });
     expect(g.id).toBe("120363000000000000@g.us");
-    expect(g.participants?.[0]?.is_admin).toBe(true);
+    expect(g.participants?.[0]?.isAdmin).toBe(true);
   });
 
   it("propagates AuthenticationError on 401", async () => {
@@ -115,7 +115,7 @@ describe("client.groups.get", () => {
     });
     const g = await c.groups.get("120363000000000000@g.us");
     expect(g.name).toBe("Engineering");
-    expect(g.participant_count).toBe(3);
+    expect(g.participantCount).toBe(3);
   });
 
   it("raises ValidationError when required field missing", async () => {
@@ -143,22 +143,22 @@ describe("client.groups.update", () => {
 });
 
 describe("client.groups.addMember", () => {
-  it("POSTs /v1/groups/:id/members with chat_id", async () => {
+  it("POSTs /v1/groups/:id/members with chatId", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/groups/g1/members");
       const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ chat_id: "15551230003@c.us" });
+      expect(body).toEqual({ chatId: "15551230003@c.us" });
       return jsonResponse(200, baseGroup());
     });
-    const g = await c.groups.addMember("g1", { chat_id: "15551230003@c.us" });
+    const g = await c.groups.addMember("g1", { chatId: "15551230003@c.us" });
     expect(g.id).toBe("120363000000000000@g.us");
   });
 
   it("propagates AuthenticationError on 401", async () => {
     const c = mkClient(() => authErr());
     const err = await c.groups
-      .addMember("g1", { chat_id: "x@c.us" })
+      .addMember("g1", { chatId: "x@c.us" })
       .catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);
   });
@@ -207,22 +207,22 @@ describe("client.groups.demoteAdmin", () => {
 });
 
 describe("client.groups.setPicture", () => {
-  it("PUTs /v1/groups/:id/picture with file_data_url", async () => {
+  it("PUTs /v1/groups/:id/picture with fileDataUrl", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("PUT");
       expect(new URL(req.url).pathname).toBe("/v1/groups/g1/picture");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
-        file_data_url: "data:image/png;base64,iVBOR...",
-        file_name: "logo.png",
-        file_mime_type: "image/png",
+        fileDataUrl: "data:image/png;base64,iVBOR...",
+        fileName: "logo.png",
+        fileMimeType: "image/png",
       });
       return jsonResponse(200, baseGroup());
     });
     const g = await c.groups.setPicture("g1", {
-      file_data_url: "data:image/png;base64,iVBOR...",
-      file_name: "logo.png",
-      file_mime_type: "image/png",
+      fileDataUrl: "data:image/png;base64,iVBOR...",
+      fileName: "logo.png",
+      fileMimeType: "image/png",
     });
     expect(g.id).toBe("120363000000000000@g.us");
   });
@@ -230,7 +230,7 @@ describe("client.groups.setPicture", () => {
   it("raises ValidationError when required field missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(
-      c.groups.setPicture("g1", { file_data_url: "data:..." }),
+      c.groups.setPicture("g1", { fileDataUrl: "data:..." }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 });

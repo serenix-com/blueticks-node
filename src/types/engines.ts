@@ -4,6 +4,6 @@ export const EngineStatusSchema = z.object({
   connected: z.boolean(),
   state: z.string().nullable(),
   stream: z.string().nullable(),
-  has_synced: z.boolean().nullable(),
+  hasSynced: z.boolean().nullable(),
 });
 export type EngineStatus = z.infer<typeof EngineStatusSchema>;

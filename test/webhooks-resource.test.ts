@@ -13,7 +13,7 @@ function baseWebhook(overrides: Record<string, unknown> = {}): Record<string, un
     events: ["message.delivered"],
     description: null,
     status: "enabled",
-    created_at: "2026-04-23T10:00:00Z",
+    createdAt: "2026-04-23T10:00:00Z",
     ...overrides,
   };
 }

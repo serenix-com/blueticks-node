@@ -4,12 +4,12 @@ import { pageSchema, buildListQuery, type Page, type ListParams } from "../types
 
 export interface CreateCampaignParams {
   name: string;
-  audience_id: string;
+  audienceId: string;
   text?: string;
-  media_url?: string;
-  media_caption?: string;
+  mediaUrl?: string;
+  mediaCaption?: string;
   from?: string;
-  on_missing_variable?: "fail" | "skip";
+  onMissingVariable?: "fail" | "skip";
 }
 
 const CampaignPageSchema = pageSchema(CampaignSchema);

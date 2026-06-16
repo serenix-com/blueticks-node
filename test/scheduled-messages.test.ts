@@ -12,7 +12,7 @@ function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
 
 function authErr() {
   return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", request_id: "req_a" },
+    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
   });
 }
 

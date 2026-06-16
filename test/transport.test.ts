@@ -38,7 +38,7 @@ describe("Transport", () => {
 
   it("raises AuthenticationError on 401", async () => {
     const t = makeTransport(() =>
-      jsonResponse(401, { error: { code: "authentication_required", message: "bad", request_id: "r" } }),
+      jsonResponse(401, { error: { code: "authentication_required", message: "bad", requestId: "r" } }),
     );
     await expect(t.request({ method: "GET", path: "/v1/ping", schema: OkSchema })).rejects.toBeInstanceOf(
       AuthenticationError,
@@ -56,7 +56,7 @@ describe("Transport", () => {
       n++;
       if (n === 1) {
         return new Response(
-          JSON.stringify({ error: { code: "rate_limited", message: "slow", request_id: "r" } }),
+          JSON.stringify({ error: { code: "rate_limited", message: "slow", requestId: "r" } }),
           { status: 429, headers: { "retry-after": "0", "content-type": "application/json" } },
         );
       }
@@ -70,7 +70,7 @@ describe("Transport", () => {
   it("exhausts retries and raises RateLimitError", async () => {
     const t = makeTransport(
       () =>
-        new Response(JSON.stringify({ error: { code: "rate_limited", message: "slow", request_id: "r" } }), {
+        new Response(JSON.stringify({ error: { code: "rate_limited", message: "slow", requestId: "r" } }), {
           status: 429,
           headers: { "retry-after": "0", "content-type": "application/json" },
         }),
@@ -85,7 +85,7 @@ describe("Transport", () => {
     let n = 0;
     const t = makeTransport(() => {
       n++;
-      if (n === 1) return jsonResponse(503, { error: { code: "internal_error", message: "x", request_id: "r" } });
+      if (n === 1) return jsonResponse(503, { error: { code: "internal_error", message: "x", requestId: "r" } });
       return jsonResponse(200, { ok: true });
     }, { maxRetries: 2 });
     const r = await t.request({ method: "GET", path: "/v1/ping", schema: OkSchema });
@@ -96,7 +96,7 @@ describe("Transport", () => {
     let n = 0;
     const t = makeTransport(() => {
       n++;
-      return jsonResponse(503, { error: { code: "internal_error", message: "x", request_id: "r" } });
+      return jsonResponse(503, { error: { code: "internal_error", message: "x", requestId: "r" } });
     }, { maxRetries: 3 });
     await expect(
       t.request({ method: "POST", path: "/v1/messages", schema: OkSchema, body: { x: 1 } }),

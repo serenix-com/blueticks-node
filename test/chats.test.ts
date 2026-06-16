@@ -12,7 +12,7 @@ function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
 
 function authErr() {
   return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", request_id: "req_a" },
+    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
   });
 }
 
@@ -20,11 +20,11 @@ function baseChat(overrides: Record<string, unknown> = {}): Record<string, unkno
   return {
     id: "120363000000000000@g.us",
     name: "Engineering",
-    is_group: true,
-    is_newsletter: false,
-    last_message_at: "2026-04-23T10:00:00Z",
-    unread_count: 3,
-    marked_unread: false,
+    isGroup: true,
+    isNewsletter: false,
+    lastMessageAt: "2026-04-23T10:00:00Z",
+    unreadCount: 3,
+    markedUnread: false,
     ...overrides,
   };
 }
@@ -41,7 +41,7 @@ describe("client.chats.list", () => {
     });
     const page = await c.chats.list({ query: "eng", limit: 25 });
     expect(page.data).toHaveLength(1);
-    expect(page.data[0]?.is_group).toBe(true);
+    expect(page.data[0]?.isGroup).toBe(true);
     expect(page.has_more).toBe(false);
   });
 
@@ -82,8 +82,8 @@ describe("client.chats.listParticipants", () => {
       expect(url.searchParams.get("limit")).toBe("100");
       return jsonResponse(200, {
         data: [
-          { chat_id: "15551230001@c.us", is_admin: true, is_super_admin: true },
-          { chat_id: "15551230002@c.us", is_admin: false },
+          { chatId: "15551230001@c.us", isAdmin: true, isSuperAdmin: true },
+          { chatId: "15551230002@c.us", isAdmin: false },
         ],
         has_more: false,
         next_cursor: null,
@@ -91,8 +91,8 @@ describe("client.chats.listParticipants", () => {
     });
     const list = await c.chats.listParticipants("120363000000000000@g.us", { limit: 100 });
     expect(list.data).toHaveLength(2);
-    expect(list.data[0]?.is_admin).toBe(true);
-    expect(list.data[0]?.is_super_admin).toBe(true);
+    expect(list.data[0]?.isAdmin).toBe(true);
+    expect(list.data[0]?.isSuperAdmin).toBe(true);
     expect(list.has_more).toBe(false);
     expect(list.next_cursor).toBeNull();
   });
@@ -137,13 +137,13 @@ describe("client.chats.open", () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/chats/c1/open");
-      return jsonResponse(200, { chat_id: "c1@c.us" });
+      return jsonResponse(200, { chatId: "c1@c.us" });
     });
     const r = await c.chats.open("c1");
-    expect(r.chat_id).toBe("c1@c.us");
+    expect(r.chatId).toBe("c1@c.us");
   });
 
-  it("raises ValidationError when chat_id is missing", async () => {
+  it("raises ValidationError when chatId is missing", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(c.chats.open("c1")).rejects.toBeInstanceOf(ValidationError);
   });

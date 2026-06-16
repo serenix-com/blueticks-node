@@ -15,12 +15,12 @@ export interface UpdateGroupParams {
   settings?: { announce?: boolean; restrict?: boolean };
 }
 export interface AddMemberParams {
-  chat_id: string;
+  chatId: string;
 }
 export interface SetPictureParams {
-  file_data_url: string;
-  file_name?: string;
-  file_mime_type?: string;
+  fileDataUrl: string;
+  fileName?: string;
+  fileMimeType?: string;
 }
 
 export class GroupsResource extends BaseResource {
@@ -95,7 +95,7 @@ export class GroupsResource extends BaseResource {
   /**
    * Add member to group.
    *
-   * Add a participant to the group by chat_id (JID) or phone number in international format (e.g. +14155551234). Requires `groups:write`.
+   * Add a participant to the group by chatId (JID) or phone number in international format (e.g. +14155551234). Requires `groups:write`.
    */
   async addMember(
     groupId: string,

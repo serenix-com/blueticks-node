@@ -3,24 +3,24 @@ import { z } from "zod";
 export const ChatSchema = z.object({
   id: z.string(),
   name: z.string().nullable(),
-  is_group: z.boolean(),
-  is_newsletter: z.boolean(),
-  last_message_at: z.string().datetime({ offset: true }).nullable(),
-  unread_count: z.number().int().nullable(),
-  marked_unread: z.boolean(),
+  isGroup: z.boolean(),
+  isNewsletter: z.boolean(),
+  lastMessageAt: z.string().datetime({ offset: true }).nullable(),
+  unreadCount: z.number().int().nullable(),
+  markedUnread: z.boolean(),
 });
 export type Chat = z.infer<typeof ChatSchema>;
 
 export const ParticipantSchema = z.object({
-  chat_id: z.string(),
-  is_admin: z.boolean(),
-  is_super_admin: z.boolean().optional(),
+  chatId: z.string(),
+  isAdmin: z.boolean(),
+  isSuperAdmin: z.boolean().optional(),
 });
 export type Participant = z.infer<typeof ParticipantSchema>;
 
 /**
  * Cursor-paginated participant list returned by
- * `GET /v1/chats/{chat_id}/participants`. For DMs the list contains a single
+ * `GET /v1/chats/{chatId}/participants`. For DMs the list contains a single
  * counterparty; for group chats it is a paginated slice of members.
  */
 export const ParticipantListSchema = z.object({
@@ -36,14 +36,14 @@ export const OkResponseSchema = z.object({
 });
 export type OkResponse = z.infer<typeof OkResponseSchema>;
 
-/** `{ chat_id }` envelope returned by `POST /v1/chats/{chat_id}/open`. */
+/** `{ chatId }` envelope returned by `POST /v1/chats/{chatId}/open`. */
 export const ChatRefSchema = z.object({
-  chat_id: z.string(),
+  chatId: z.string(),
 });
 export type ChatRef = z.infer<typeof ChatRefSchema>;
 
 /**
- * Response of `GET /v1/messages/ack/{chat_id}/{key}`. WhatsApp ack
+ * Response of `GET /v1/messages/ack/{waMessageKey}`. WhatsApp ack
  * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
  * when no engine response.
  */
@@ -52,15 +52,15 @@ export const MessageAckSchema = z.object({
 });
 export type MessageAck = z.infer<typeof MessageAckSchema>;
 
-/** Response of `POST /v1/messages/load_older/{chat_id}`. */
+/** Response of `POST /v1/messages/load_older/{chatId}`. */
 export const LoadOlderMessagesResponseSchema = z.object({
-  total_messages: z.number().int().nullable(),
+  totalMessages: z.number().int().nullable(),
   added: z.number().int().nullable(),
-  can_load_more: z.boolean(),
+  canLoadMore: z.boolean(),
 });
 export type LoadOlderMessagesResponse = z.infer<typeof LoadOlderMessagesResponseSchema>;
 
-/** Response of `GET /v1/messages/media_url/{chat_id}/{key}`. */
+/** Response of `GET /v1/messages/media_url/{waMessageKey}`. */
 export const MediaUrlResponseSchema = z.object({
   url: z.string().nullable(),
 });
@@ -102,26 +102,26 @@ export type MessageType = z.infer<typeof MessageTypeSchema>;
 
 export const ChatMessageSchema = z.object({
   key: z.string(),
-  chat_id: z.string(),
+  chatId: z.string(),
   from: z.string(),
   timestamp: z.string().datetime({ offset: true }).nullable(),
   text: z.string().nullable(),
   type: z.string(),
-  from_me: z.boolean(),
+  fromMe: z.boolean(),
   ack: z.number().int().nullable(),
-  media_url: z.string().nullable(),
+  mediaUrl: z.string().nullable(),
   caption: z.string().nullable(),
   filename: z.string().nullable(),
 });
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 /**
- * Single entry in a `GET /v1/messages/pinned/{chat_id}` response — a currently
+ * Single entry in a `GET /v1/messages/pinned/{chatId}` response — a currently
  * pinned message in the chat.
  */
 export const PinnedMessageSchema = z.object({
   key: z.string(),
-  chat_id: z.string(),
+  chatId: z.string(),
   text: z.string().nullable(),
 });
 export type PinnedMessage = z.infer<typeof PinnedMessageSchema>;
@@ -136,7 +136,7 @@ export const MediaUnavailableReasonSchema = z.enum([
 export type MediaUnavailableReason = z.infer<typeof MediaUnavailableReasonSchema>;
 
 /**
- * Flat body for `POST /v1/messages/{chat_id}`. Same shape as
+ * Flat body for `POST /v1/messages/{chatId}`. Same shape as
  * `SendMessageRequest` (scheduled-messages) minus `to` (taken from the URL
  * path) and `sendAt` (this endpoint is fire-and-forget). `type` is a
  * required validation-only discriminator (`text` | `media` | `poll`); the
@@ -175,12 +175,12 @@ export const ChatMediaSchema = z.object({
   url: z.string().nullable(),
   mimetype: z.string().nullable(),
   filename: z.string().nullable(),
-  data_base64: z.string().nullable(),
+  dataBase64: z.string().nullable(),
   // false when WA returned a preview JPEG instead of the original (#113 —
   // own-sent newsletter media). null/absent when bytes are the genuine
   // original from the sender.
-  original_quality: z.boolean().nullable(),
+  originalQuality: z.boolean().nullable(),
   // Reason the bytes couldn't be retrieved. null/absent on success.
-  media_unavailable: MediaUnavailableReasonSchema.nullable(),
+  mediaUnavailable: MediaUnavailableReasonSchema.nullable(),
 });
 export type ChatMedia = z.infer<typeof ChatMediaSchema>;

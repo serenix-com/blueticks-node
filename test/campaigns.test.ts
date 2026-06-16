@@ -10,37 +10,37 @@ function baseCampaign(overrides: Record<string, unknown> = {}): Record<string, u
   return {
     id: "cmp_1",
     name: "Spring promo",
-    audience_id: "aud_1",
+    audienceId: "aud_1",
     status: "pending",
-    total_count: 0,
-    sent_count: 0,
-    delivered_count: 0,
-    read_count: 0,
-    failed_count: 0,
+    totalCount: 0,
+    sentCount: 0,
+    deliveredCount: 0,
+    readCount: 0,
+    failedCount: 0,
     from: null,
-    created_at: "2026-04-23T10:00:00Z",
-    started_at: null,
-    completed_at: null,
-    aborted_at: null,
+    createdAt: "2026-04-23T10:00:00Z",
+    startedAt: null,
+    completedAt: null,
+    abortedAt: null,
     ...overrides,
   };
 }
 
 describe("client.campaigns", () => {
-  it("create POSTs with snake_case audience_id", async () => {
+  it("create POSTs with camelCase audienceId", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/campaigns");
       const body = (await req.json()) as Record<string, unknown>;
-      expect(body["audience_id"]).toBe("aud_1");
-      expect(body["on_missing_variable"]).toBe("skip");
+      expect(body["audienceId"]).toBe("aud_1");
+      expect(body["onMissingVariable"]).toBe("skip");
       return jsonResponse(200, baseCampaign());
     });
     const r = await c.campaigns.create({
       name: "Spring promo",
-      audience_id: "aud_1",
+      audienceId: "aud_1",
       text: "hi",
-      on_missing_variable: "skip",
+      onMissingVariable: "skip",
     });
     expect(r.id).toBe("cmp_1");
   });
@@ -90,7 +90,7 @@ describe("client.campaigns", () => {
   it("cancel POSTs /cancel", async () => {
     const c = mkClient((req) => {
       expect(new URL(req.url).pathname).toBe("/v1/campaigns/cmp_1/cancel");
-      return jsonResponse(200, baseCampaign({ status: "aborted", aborted_at: "2026-04-23T11:00:00Z" }));
+      return jsonResponse(200, baseCampaign({ status: "aborted", abortedAt: "2026-04-23T11:00:00Z" }));
     });
     const r = await c.campaigns.cancel("cmp_1");
     expect(r.status).toBe("aborted");
