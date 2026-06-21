@@ -3,6 +3,15 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [4.2.0] — 2026-06-18
+
+### Removed
+
+- Removed webhook signature verification (`verifyWebhook`/`WebhookVerificationError`),
+  the webhook signing `secret`, and `rotateSecret` — webhook deliveries are no longer
+  signed. The `blueticks/webhooks` subpath, `WebhookCreateResult`, and `WebhookEvent`
+  types are gone; `webhooks.create()` now returns a plain `Webhook`.
+
 ## [3.5.0] — 2026-05-22
 
 OpenAPI parity pass. The SDK now matches `backend/openapi.json`

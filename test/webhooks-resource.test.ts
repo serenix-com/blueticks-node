@@ -19,16 +19,15 @@ function baseWebhook(overrides: Record<string, unknown> = {}): Record<string, un
 }
 
 describe("client.webhooks", () => {
-  it("create returns secret", async () => {
+  it("create returns the webhook", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/webhooks");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({ url: "https://example.com/hook", events: ["message.delivered"] });
-      return jsonResponse(200, { ...baseWebhook(), secret: "whsec_abc" });
+      return jsonResponse(200, baseWebhook());
     });
     const wh = await c.webhooks.create({ url: "https://example.com/hook", events: ["message.delivered"] });
-    expect(wh.secret).toBe("whsec_abc");
     expect(wh.id).toBe("wh_1");
   });
 
@@ -78,15 +77,5 @@ describe("client.webhooks", () => {
     const result = await c.webhooks.delete("wh_1");
     expect(result.id).toBe("wh_1");
     expect(result.deleted).toBe(true);
-  });
-
-  it("rotateSecret POSTs and returns new secret", async () => {
-    const c = mkClient((req) => {
-      expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_1/rotate-secret");
-      return jsonResponse(200, { ...baseWebhook(), secret: "whsec_new" });
-    });
-    const wh = await c.webhooks.rotateSecret("wh_1");
-    expect(wh.secret).toBe("whsec_new");
   });
 });

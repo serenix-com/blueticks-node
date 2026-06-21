@@ -63,11 +63,7 @@ export {
   WebhookSchema,
   WebhookStatusSchema,
   WebhookEventTypeSchema,
-  WebhookCreateResultSchema,
-  WebhookEventSchema,
   type Webhook,
   type WebhookStatus,
   type WebhookEventType,
-  type WebhookCreateResult,
-  type WebhookEvent,
 } from "./webhooks";

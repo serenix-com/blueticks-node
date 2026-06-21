@@ -31,18 +31,3 @@ export const WebhookSchema = z.object({
 });
 
 export type Webhook = z.infer<typeof WebhookSchema>;
-
-export const WebhookCreateResultSchema = WebhookSchema.extend({
-  secret: z.string(),
-});
-
-export type WebhookCreateResult = z.infer<typeof WebhookCreateResultSchema>;
-
-export const WebhookEventSchema = z.object({
-  id: z.string(),
-  type: z.string(),
-  created_at: z.string(),
-  data: z.record(z.unknown()),
-});
-
-export type WebhookEvent = z.infer<typeof WebhookEventSchema>;

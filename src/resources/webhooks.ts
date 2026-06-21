@@ -1,10 +1,5 @@
 import { BaseResource } from "../base-resource";
-import {
-  WebhookSchema,
-  WebhookCreateResultSchema,
-  type Webhook,
-  type WebhookCreateResult,
-} from "../types/webhooks";
+import { WebhookSchema, type Webhook } from "../types/webhooks";
 import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
@@ -24,12 +19,12 @@ export interface UpdateWebhookParams {
 const WebhookPageSchema = pageSchema(WebhookSchema);
 
 export class WebhooksResource extends BaseResource {
-  /** Register a new webhook endpoint. The returned object includes the signing `secret`. */
-  async create(body: CreateWebhookParams, opts: { signal?: AbortSignal } = {}): Promise<WebhookCreateResult> {
+  /** Register a new webhook endpoint. */
+  async create(body: CreateWebhookParams, opts: { signal?: AbortSignal } = {}): Promise<Webhook> {
     return this.client.request({
       method: "POST",
       path: "/v1/webhooks",
-      schema: WebhookCreateResultSchema,
+      schema: WebhookSchema,
       body,
       signal: opts.signal,
     });
@@ -89,16 +84,6 @@ export class WebhooksResource extends BaseResource {
       method: "DELETE",
       path: `/v1/webhooks/${id}`,
       schema: DeletedResourceSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /** Rotate the signing secret for a webhook. The old secret stops verifying immediately. */
-  async rotateSecret(id: string, opts: { signal?: AbortSignal } = {}): Promise<WebhookCreateResult> {
-    return this.client.request({
-      method: "POST",
-      path: `/v1/webhooks/${id}/rotate-secret`,
-      schema: WebhookCreateResultSchema,
       signal: opts.signal,
     });
   }
