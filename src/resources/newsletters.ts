@@ -1,8 +1,13 @@
 import { BaseResource } from "../base-resource";
-import { NewsletterSchema, type Newsletter } from "../types/newsletters";
+import {
+  NewsletterSchema,
+  NewsletterListItemSchema,
+  type Newsletter,
+  type NewsletterListItem,
+} from "../types/newsletters";
 import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
 
-const NewsletterPageSchema = pageSchema(NewsletterSchema);
+const NewsletterPageSchema = pageSchema(NewsletterListItemSchema);
 
 export interface CreateNewsletterParams {
   name: string;
@@ -15,7 +20,9 @@ export class NewslettersResource extends BaseResource {
    *
    * List newsletters visible to the connected WhatsApp engine. Cursor-paginated via `limit` + `cursor`. Requires `newsletters:read` scope.
    */
-  async list(params: ListParams & { signal?: AbortSignal } = {}): Promise<Page<Newsletter>> {
+  async list(
+    params: ListParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<NewsletterListItem>> {
     const { signal, ...listParams } = params;
     return this.client.request({
       method: "GET",

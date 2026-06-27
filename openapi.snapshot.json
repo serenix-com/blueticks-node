@@ -1620,9 +1620,13 @@
         "pattern": "^\\d+@newsletter$",
         "type": "string"
       },
-      "NewsletterResponse": {
+      "NewsletterListItem": {
         "additionalProperties": false,
         "properties": {
+          "chatId": {
+            "description": "Newsletter JID, e.g. 120363201733549020@newsletter.",
+            "type": "string"
+          },
           "createdAt": {
             "format": "date-time",
             "nullable": true,
@@ -1633,10 +1637,6 @@
             "nullable": true,
             "type": "string"
           },
-          "id": {
-            "description": "Newsletter JID, e.g. 120363201733549020@newsletter.",
-            "type": "string"
-          },
           "invite": {
             "description": "Invite code (suffix of https://whatsapp.com/channel/<invite>).",
             "nullable": true,
@@ -1644,11 +1644,6 @@
           },
           "name": {
             "description": "Display name of the newsletter / WhatsApp channel.",
-            "type": "string"
-          },
-          "owner": {
-            "description": "Owner JID, if returned by the engine.",
-            "nullable": true,
             "type": "string"
           },
           "subscribers": {
@@ -1666,10 +1661,60 @@
           }
         },
         "required": [
-          "id",
+          "chatId",
           "name",
           "description",
-          "owner",
+          "createdAt",
+          "subscribers",
+          "invite",
+          "verification"
+        ],
+        "type": "object"
+      },
+      "NewsletterResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "nullable": true,
+            "type": "string"
+          },
+          "description": {
+            "description": "Optional description.",
+            "nullable": true,
+            "type": "string"
+          },
+          "invite": {
+            "description": "Invite code (suffix of https://whatsapp.com/channel/<invite>).",
+            "nullable": true,
+            "type": "string"
+          },
+          "name": {
+            "description": "Display name of the newsletter / WhatsApp channel.",
+            "type": "string"
+          },
+          "newsletterId": {
+            "description": "Newsletter JID, e.g. 120363201733549020@newsletter.",
+            "type": "string"
+          },
+          "subscribers": {
+            "minimum": 0,
+            "nullable": true,
+            "type": "integer"
+          },
+          "verification": {
+            "enum": [
+              "VERIFIED",
+              "UNVERIFIED"
+            ],
+            "nullable": true,
+            "type": "string"
+          }
+        },
+        "required": [
+          "newsletterId",
+          "name",
+          "description",
           "createdAt",
           "subscribers",
           "invite",
@@ -10730,6 +10775,10 @@
                       "items": {
                         "additionalProperties": false,
                         "properties": {
+                          "chatId": {
+                            "description": "Newsletter JID, e.g. 120363201733549020@newsletter.",
+                            "type": "string"
+                          },
                           "createdAt": {
                             "format": "date-time",
                             "nullable": true,
@@ -10740,10 +10789,6 @@
                             "nullable": true,
                             "type": "string"
                           },
-                          "id": {
-                            "description": "Newsletter JID, e.g. 120363201733549020@newsletter.",
-                            "type": "string"
-                          },
                           "invite": {
                             "description": "Invite code (suffix of https://whatsapp.com/channel/<invite>).",
                             "nullable": true,
@@ -10751,11 +10796,6 @@
                           },
                           "name": {
                             "description": "Display name of the newsletter / WhatsApp channel.",
-                            "type": "string"
-                          },
-                          "owner": {
-                            "description": "Owner JID, if returned by the engine.",
-                            "nullable": true,
                             "type": "string"
                           },
                           "subscribers": {
@@ -10773,10 +10813,9 @@
                           }
                         },
                         "required": [
-                          "id",
+                          "chatId",
                           "name",
                           "description",
-                          "owner",
                           "createdAt",
                           "subscribers",
                           "invite",

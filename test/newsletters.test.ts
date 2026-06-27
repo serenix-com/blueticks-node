@@ -17,10 +17,19 @@ function authErr() {
 }
 
 const fullNewsletter = {
-  id: "120363201733549020@newsletter",
+  newsletterId: "120363201733549020@newsletter",
   name: "Acme Updates",
   description: "Weekly news from Acme Corp.",
-  owner: "15551234567@s.whatsapp.net",
+  createdAt: "2026-01-15T09:00:00Z",
+  subscribers: 412,
+  invite: "AbCdEfGhIjKlMn",
+  verification: "VERIFIED",
+};
+
+const fullNewsletterListItem = {
+  chatId: "120363201733549020@newsletter",
+  name: "Acme Updates",
+  description: "Weekly news from Acme Corp.",
   createdAt: "2026-01-15T09:00:00Z",
   subscribers: 412,
   invite: "AbCdEfGhIjKlMn",
@@ -28,19 +37,19 @@ const fullNewsletter = {
 };
 
 describe("client.newsletters.list", () => {
-  it("GETs /v1/newsletters and returns Page<Newsletter>", async () => {
+  it("GETs /v1/newsletters and returns Page<NewsletterListItem>", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/newsletters");
       return jsonResponse(200, {
-        data: [fullNewsletter],
+        data: [fullNewsletterListItem],
         has_more: false,
         next_cursor: null,
       });
     });
     const page = await c.newsletters.list({ limit: 10 });
     expect(page.data).toHaveLength(1);
-    expect(page.data[0]!.id).toBe("120363201733549020@newsletter");
+    expect(page.data[0]!.chatId).toBe("120363201733549020@newsletter");
     expect(page.data[0]!.name).toBe("Acme Updates");
     expect(page.data[0]!.verification).toBe("VERIFIED");
     expect(page.has_more).toBe(false);
@@ -73,8 +82,8 @@ describe("client.newsletters.create", () => {
       name: "Acme Updates",
       description: "Weekly news",
     });
-    expect(typeof n.id).toBe("string");
-    expect(n.id).toBe("120363201733549020@newsletter");
+    expect(typeof n.newsletterId).toBe("string");
+    expect(n.newsletterId).toBe("120363201733549020@newsletter");
     expect(n.name).toBe("Acme Updates");
     expect(n.subscribers).toBe(412);
     expect(n.verification).toBe("VERIFIED");
@@ -103,7 +112,7 @@ describe("client.newsletters.retrieve", () => {
       return jsonResponse(200, fullNewsletter);
     });
     const n = await c.newsletters.retrieve("120363201733549020@newsletter");
-    expect(n.id).toBe("120363201733549020@newsletter");
+    expect(n.newsletterId).toBe("120363201733549020@newsletter");
     expect(n.description).toBe("Weekly news from Acme Corp.");
     expect(n.invite).toBe("AbCdEfGhIjKlMn");
     expect(n.verification).toBe("VERIFIED");

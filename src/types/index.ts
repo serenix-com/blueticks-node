@@ -50,7 +50,12 @@ export { WhatsAppContactSchema, type WhatsAppContact } from "./contacts";
 export { DeletedResourceSchema, type DeletedResource } from "./deleted";
 export { EngineStatusSchema, type EngineStatus } from "./engines";
 export { GroupSchema, GroupParticipantSchema, type Group, type GroupParticipant } from "./groups";
-export { NewsletterSchema, type Newsletter } from "./newsletters";
+export {
+  NewsletterSchema,
+  NewsletterListItemSchema,
+  type Newsletter,
+  type NewsletterListItem,
+} from "./newsletters";
 export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
 export { PingSchema, type Ping } from "./ping";
 export {

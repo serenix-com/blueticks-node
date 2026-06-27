@@ -3,6 +3,21 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — 2026-06-25
+
+### Changed
+
+- **Newsletters: identity field renamed and split by surface (breaking).** The
+  `/v1/newsletters` resource now keys rows differently depending on the surface,
+  matching the rest of the API:
+  - `newsletters.list()` rows are now `NewsletterListItem` and use `chatId`
+    (was `id`) — consistent with how `chats`/`contacts`/`groups` key list rows.
+  - `newsletters.create()` and `newsletters.retrieve()` still return
+    `Newsletter`, but its identity field is now `newsletterId` (was `id`).
+  - A new `NewsletterListItem` / `NewsletterListItemSchema` type is exported.
+    The stale `owner` field (absent from the current spec) was dropped from the
+    newsletter shapes.
+
 ## [4.2.0] — 2026-06-18
 
 ### Removed
