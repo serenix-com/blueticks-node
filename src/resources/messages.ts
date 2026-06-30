@@ -5,7 +5,6 @@ import {
   OkResponseSchema,
   MessageAckSchema,
   LoadOlderMessagesResponseSchema,
-  MediaUrlResponseSchema,
   BatchMessageAcksResponseSchema,
   PinnedMessageSchema,
   type ChatMessage,
@@ -13,7 +12,6 @@ import {
   type OkResponse,
   type MessageAck,
   type LoadOlderMessagesResponse,
-  type MediaUrlResponse,
   type BatchMessageAcksResponse,
   type PinnedMessage,
   type MessageType,
@@ -220,24 +218,6 @@ export class MessagesResource extends BaseResource {
       path: `/v1/messages/media/${encodeURIComponent(waMessageKey)}`,
       query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       schema: ChatMediaSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Get message media URL.
-   *
-   * Returns a hosted URL for the message media without inlining bytes. Faster + cheaper than `media` when the caller can fetch the URL themselves. Same `mediaUnavailable` semantics. Requires `chats:read`.
-   */
-  async getMediaUrl(
-    waMessageKey: string,
-    opts: { chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<MediaUrlResponse> {
-    return this.client.request({
-      method: "GET",
-      path: `/v1/messages/media_url/${encodeURIComponent(waMessageKey)}`,
-      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      schema: MediaUrlResponseSchema,
       signal: opts.signal,
     });
   }

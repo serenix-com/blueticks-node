@@ -381,29 +381,6 @@ describe("client.messages.getMedia", () => {
   });
 });
 
-describe("client.messages.getMediaUrl", () => {
-  it("returns typed MediaUrlResponse", async () => {
-    const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/media_url/k1");
-      return jsonResponse(200, { url: "https://cdn.example/x.jpg" });
-    });
-    const r = await c.messages.getMediaUrl("k1");
-    expect(r.url).toBe("https://cdn.example/x.jpg");
-  });
-
-  it("accepts null url", async () => {
-    const c = mkClient(() => jsonResponse(200, { url: null }));
-    const r = await c.messages.getMediaUrl("k1");
-    expect(r.url).toBeNull();
-  });
-
-  it("raises ValidationError when url is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(c.messages.getMediaUrl("k1")).rejects.toBeInstanceOf(ValidationError);
-  });
-});
-
 describe("client.messages.batchAcks", () => {
   it("POSTs messageKeys and returns BatchMessageAcksResponse", async () => {
     const c = mkClient(async (req) => {

@@ -60,12 +60,6 @@ export const LoadOlderMessagesResponseSchema = z.object({
 });
 export type LoadOlderMessagesResponse = z.infer<typeof LoadOlderMessagesResponseSchema>;
 
-/** Response of `GET /v1/messages/media_url/{waMessageKey}`. */
-export const MediaUrlResponseSchema = z.object({
-  url: z.string().nullable(),
-});
-export type MediaUrlResponse = z.infer<typeof MediaUrlResponseSchema>;
-
 /**
  * Single entry in a `POST /v1/messages/acks` response. WhatsApp ack
  * value: -1=error, 0=pending, 1=server, 2=device, 3=read, 4=played; null
