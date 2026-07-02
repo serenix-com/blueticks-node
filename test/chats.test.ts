@@ -132,6 +132,52 @@ describe("client.chats.markRead", () => {
   });
 });
 
+describe("client.chats.archive", () => {
+  it("POSTs /v1/chats/:id/archive and returns OkResponse", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("POST");
+      expect(new URL(req.url).pathname).toBe("/v1/chats/c1/archive");
+      return jsonResponse(200, { ok: true });
+    });
+    const r = await c.chats.archive("c1");
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects ok:false (literal mismatch)", async () => {
+    const c = mkClient(() => jsonResponse(200, { ok: false }));
+    await expect(c.chats.archive("c1")).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() => authErr());
+    const err = await c.chats.archive("c1").catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+  });
+});
+
+describe("client.chats.unarchive", () => {
+  it("POSTs /v1/chats/:id/unarchive and returns OkResponse", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("POST");
+      expect(new URL(req.url).pathname).toBe("/v1/chats/c1/unarchive");
+      return jsonResponse(200, { ok: true });
+    });
+    const r = await c.chats.unarchive("c1");
+    expect(r.ok).toBe(true);
+  });
+
+  it("rejects ok:false (literal mismatch)", async () => {
+    const c = mkClient(() => jsonResponse(200, { ok: false }));
+    await expect(c.chats.unarchive("c1")).rejects.toBeInstanceOf(ValidationError);
+  });
+
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() => authErr());
+    const err = await c.chats.unarchive("c1").catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+  });
+});
+
 describe("client.chats.open", () => {
   it("POSTs and returns ChatRef", async () => {
     const c = mkClient((req) => {

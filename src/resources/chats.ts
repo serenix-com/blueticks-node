@@ -84,6 +84,34 @@ export class ChatsResource extends BaseResource {
   }
 
   /**
+   * Archive chat.
+   *
+   * Archives the given chat on the connected engine, hiding it from the main chat list. Requires `chats:write`.
+   */
+  async archive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<OkResponse> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/chats/${encodeURIComponent(chatId)}/archive`,
+      schema: OkResponseSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Unarchive chat.
+   *
+   * Removes the given chat from the archive, restoring it to the main chat list. Requires `chats:write`.
+   */
+  async unarchive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<OkResponse> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/chats/${encodeURIComponent(chatId)}/unarchive`,
+      schema: OkResponseSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
    * Open chat in engine.
    *
    * Brings the chat to the foreground on the connected WhatsApp Web client (creates the chat if it doesn`t exist yet for the engine). Useful before issuing follow-up reads on a fresh JID. Requires `chats:write`.
