@@ -37,3 +37,8 @@ export {
   type SendScheduledMessageParams,
   type UpdateScheduledMessageParams,
 } from "./scheduled-messages";
+export {
+  SunoResource,
+  type GenerateSongParams,
+  type UploadAudioParams,
+} from "./suno";

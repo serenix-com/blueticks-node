@@ -26,6 +26,8 @@ function baseScheduledMessage(overrides: Record<string, unknown> = {}): Record<s
     mediaUrl: null,
     mediaKind: null,
     pollQuestion: null,
+    pollOptions: null,
+    pollAllowMultiple: null,
     status: "pending",
     sendAt: null,
     createdAt: "2026-04-23T10:00:00Z",
@@ -40,18 +42,17 @@ function baseScheduledMessage(overrides: Record<string, unknown> = {}): Record<s
 }
 
 describe("client.scheduledMessages.create (text variant)", () => {
-  it("POSTs to /v1/scheduled-messages with type+text and returns typed ScheduledMessage", async () => {
+  it("POSTs to /v1/scheduled-messages/:chatId with type+text and returns typed ScheduledMessage", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages");
+      expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/%2B15551230001");
       const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ type: "text", to: "+15551230001", text: "hello" });
+      expect(body).toEqual({ type: "text", text: "hello" });
       expect(req.headers.get("idempotency-key")).toBeNull();
       return jsonResponse(201, baseScheduledMessage());
     });
-    const m = await c.scheduledMessages.create({
+    const m = await c.scheduledMessages.create("+15551230001", {
       type: "text",
-      to: "+15551230001",
       text: "hello",
     });
     expect(m.id).toBe("sm_1");
@@ -66,41 +67,39 @@ describe("client.scheduledMessages.create (text variant)", () => {
       expect(body).not.toHaveProperty("idempotencyKey");
       return jsonResponse(201, baseScheduledMessage());
     });
-    await c.scheduledMessages.create({
-      type: "text",
-      to: "+15551230001",
-      text: "hi",
-      idempotencyKey: "abc-123",
-    });
+    await c.scheduledMessages.create(
+      "+15551230001",
+      { type: "text", text: "hi" },
+      { idempotencyKey: "abc-123" },
+    );
   });
 
-  it("forwards camelCase wire fields (sendAt, replyTo, linkPreview)", async () => {
+  it("forwards camelCase wire fields (sendAt, replyTo, secret)", async () => {
     const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/%2B15551230001");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "text",
-        to: "+15551230001",
         text: "hello",
         sendAt: "2026-06-01T12:00:00Z",
         replyTo: "msg_abc",
-        linkPreview: { title: "T", canonicalUrl: "https://example.com/x" },
+        secret: "corr-1",
       });
       return jsonResponse(201, baseScheduledMessage());
     });
-    await c.scheduledMessages.create({
+    await c.scheduledMessages.create("+15551230001", {
       type: "text",
-      to: "+15551230001",
       text: "hello",
       sendAt: "2026-06-01T12:00:00Z",
       replyTo: "msg_abc",
-      linkPreview: { title: "T", canonicalUrl: "https://example.com/x" },
+      secret: "corr-1",
     });
   });
 
   it("raises ValidationError when required field missing from response", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(
-      c.scheduledMessages.create({ type: "text", to: "+15551230001", text: "hi" }),
+      c.scheduledMessages.create("+15551230001", { type: "text", text: "hi" }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 });
@@ -108,10 +107,10 @@ describe("client.scheduledMessages.create (text variant)", () => {
 describe("client.scheduledMessages.create (media variant)", () => {
   it("POSTs type:media with flat media fields", async () => {
     const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/%2B15551230001");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
-        to: "+15551230001",
         mediaUrl: "https://cdn.example.com/x.pdf",
         mediaKind: "document",
         mediaFilename: "receipt.pdf",
@@ -126,9 +125,8 @@ describe("client.scheduledMessages.create (media variant)", () => {
         }),
       );
     });
-    const m = await c.scheduledMessages.create({
+    const m = await c.scheduledMessages.create("+15551230001", {
       type: "media",
-      to: "+15551230001",
       mediaUrl: "https://cdn.example.com/x.pdf",
       mediaKind: "document",
       mediaFilename: "receipt.pdf",
@@ -142,7 +140,6 @@ describe("client.scheduledMessages.create (media variant)", () => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "media",
-        to: "+15551230001",
         mediaBase64: "AAAA",
         mediaKind: "image",
         mediaFilename: "x.png",
@@ -153,9 +150,8 @@ describe("client.scheduledMessages.create (media variant)", () => {
         baseScheduledMessage({ type: "media", mediaKind: "image", text: "look" }),
       );
     });
-    await c.scheduledMessages.create({
+    await c.scheduledMessages.create("+15551230001", {
       type: "media",
-      to: "+15551230001",
       mediaBase64: "AAAA",
       mediaKind: "image",
       mediaFilename: "x.png",
@@ -167,10 +163,10 @@ describe("client.scheduledMessages.create (media variant)", () => {
 describe("client.scheduledMessages.create (poll variant)", () => {
   it("POSTs type:poll with flat poll fields", async () => {
     const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/scheduled-messages/%2B15551230001");
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "poll",
-        to: "+15551230001",
         pollQuestion: "Pizza?",
         pollOptions: ["Yes", "No"],
       });
@@ -179,9 +175,8 @@ describe("client.scheduledMessages.create (poll variant)", () => {
         baseScheduledMessage({ type: "poll", pollQuestion: "Pizza?", text: null }),
       );
     });
-    const m = await c.scheduledMessages.create({
+    const m = await c.scheduledMessages.create("+15551230001", {
       type: "poll",
-      to: "+15551230001",
       pollQuestion: "Pizza?",
       pollOptions: ["Yes", "No"],
     });
@@ -194,7 +189,6 @@ describe("client.scheduledMessages.create (poll variant)", () => {
       const body = (await req.json()) as Record<string, unknown>;
       expect(body).toEqual({
         type: "poll",
-        to: "+15551230001",
         pollQuestion: "Pizza?",
         pollOptions: ["Yes", "No"],
         pollAllowMultiple: true,
@@ -204,9 +198,8 @@ describe("client.scheduledMessages.create (poll variant)", () => {
         baseScheduledMessage({ type: "poll", pollQuestion: "Pizza?", text: null }),
       );
     });
-    await c.scheduledMessages.create({
+    await c.scheduledMessages.create("+15551230001", {
       type: "poll",
-      to: "+15551230001",
       pollQuestion: "Pizza?",
       pollOptions: ["Yes", "No"],
       pollAllowMultiple: true,
@@ -216,7 +209,7 @@ describe("client.scheduledMessages.create (poll variant)", () => {
   it("propagates AuthenticationError on 401", async () => {
     const c = mkClient(() => authErr());
     const err = await c.scheduledMessages
-      .create({ type: "text", to: "+15551230001", text: "hi" })
+      .create("+15551230001", { type: "text", text: "hi" })
       .catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);
     expect(err.requestId).toBe("req_a");

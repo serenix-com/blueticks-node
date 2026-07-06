@@ -12,7 +12,12 @@ export interface CreateGroupParams {
 }
 export interface UpdateGroupParams {
   name?: string;
-  settings?: { announce?: boolean; restrict?: boolean };
+  settings?: {
+    announce?: boolean;
+    restrict?: boolean;
+    /** Replace the group description/topic. 1–2048 chars. */
+    description?: string;
+  };
 }
 export interface AddMemberParams {
   chatId: string;

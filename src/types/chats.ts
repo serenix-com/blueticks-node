@@ -13,6 +13,7 @@ export type Chat = z.infer<typeof ChatSchema>;
 
 export const ParticipantSchema = z.object({
   chatId: z.string(),
+  name: z.string().nullable().optional(),
   isAdmin: z.boolean(),
   isSuperAdmin: z.boolean().optional(),
 });

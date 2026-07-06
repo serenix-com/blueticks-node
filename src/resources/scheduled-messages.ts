@@ -8,17 +8,15 @@ import { pageSchema, buildListQuery, type Page, type ListParams } from "../types
 const ScheduledMessagePageSchema = pageSchema(ScheduledMessageSchema);
 
 /**
- * Flat body for `POST /v1/scheduled-messages` (`SendMessageRequest`). `type`
- * is a required validation-only discriminator (`text` | `media` | `poll`);
- * the media/poll fields are flat (e.g. `mediaUrl`, `pollOptions`) and `text`
- * doubles as the media caption. `idempotencyKey` and `signal` are SDK call
- * options stripped before the request body.
+ * Flat body for `POST /v1/scheduled-messages/{chatId}` (`SendMessageRequest`).
+ * The recipient is taken from the URL path (`chatId`), so there is no `to`
+ * field. `type` is a required validation-only discriminator
+ * (`text` | `media` | `poll`); the media/poll fields are flat (e.g.
+ * `mediaUrl`, `pollOptions`) and `text` doubles as the media caption.
  */
 export interface SendScheduledMessageParams {
   /** Validation discriminator: which family of fields is required. */
   type: "text" | "media" | "poll";
-  /** Recipient (phone in international format, JID, or chat id). */
-  to: string;
   /** Schedule the send for a future ISO 8601 datetime. Omit to send now. */
   sendAt?: string;
   /** Text body (type=text) or media caption (type=media). 1–4096 chars. */
@@ -39,13 +37,8 @@ export interface SendScheduledMessageParams {
   pollAllowMultiple?: boolean;
   /** Wire `key` of a prior message to quote-reply (from MessageResponse.key). */
   replyTo?: string;
-  /** JIDs to mention. `displays` is the rendered name list. */
-  mentions?: {
-    ids: string[];
-    displays?: string[];
-  };
-  idempotencyKey?: string;
-  signal?: AbortSignal;
+  /** Opaque correlation token stored on the message and carried into WhatsApp's `messageSecret`. Not a dedup key — use `idempotencyKey` for at-most-once sends. */
+  secret?: string;
 }
 
 /** Subset of mutable fields accepted by `PATCH /v1/scheduled-messages/{id}`. */
@@ -89,17 +82,20 @@ export class ScheduledMessagesResource extends BaseResource {
   /**
    * Schedule message.
    *
-   * Send a message via WhatsApp. The body is flat — set `type` to one of `text`, `media`, or `poll`, then supply the matching fields (`text`, `mediaUrl`/`mediaBase64`, or `pollQuestion`/`pollOptions`). `text` doubles as the media caption. Optional `sendAt` schedules the send; omit it to send now.
+   * Send or schedule a message to the chat named in the URL path (`chatId` — a phone number in E.164 format or a WhatsApp chat id). The body is flat — set `type` to one of `text`, `media`, or `poll`, then supply the matching fields (`text`, `mediaUrl`/`mediaBase64`, or `pollQuestion`/`pollOptions`). `text` doubles as the media caption. Optional `sendAt` schedules the send; omit it to send now.
    */
-  async create(params: SendScheduledMessageParams): Promise<ScheduledMessage> {
-    const { idempotencyKey, signal, ...body } = params;
+  async create(
+    chatId: string,
+    body: SendScheduledMessageParams,
+    opts: { idempotencyKey?: string; signal?: AbortSignal } = {},
+  ): Promise<ScheduledMessage> {
     return this.client.request({
       method: "POST",
-      path: "/v1/scheduled-messages",
+      path: `/v1/scheduled-messages/${encodeURIComponent(chatId)}`,
       schema: ScheduledMessageSchema,
       body,
-      idempotencyKey,
-      signal,
+      idempotencyKey: opts.idempotencyKey,
+      signal: opts.signal,
     });
   }
 

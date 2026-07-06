@@ -140,6 +140,17 @@ describe("client.groups.update", () => {
     expect(g.name).toBe("Renamed");
     expect(g.announce).toBe(true);
   });
+
+  it("PATCHes /v1/groups/:id with settings.description", async () => {
+    const c = mkClient(async (req) => {
+      expect(req.method).toBe("PATCH");
+      const body = (await req.json()) as Record<string, unknown>;
+      expect(body).toEqual({ settings: { description: "New topic" } });
+      return jsonResponse(200, baseGroup({ description: "New topic" }));
+    });
+    const g = await c.groups.update("g1", { settings: { description: "New topic" } });
+    expect(g.description).toBe("New topic");
+  });
 });
 
 describe("client.groups.addMember", () => {

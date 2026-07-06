@@ -2,11 +2,20 @@ import { z } from "zod";
 
 export const ScheduledMessageStatusSchema = z.enum([
   "pending",
+  "before-wa-send",
+  "bt-sent",
+  "sending",
+  "sent",
+  "sent_pending_ack",
   "confirmed",
+  "delivered",
   "received",
   "read",
   "played",
+  "cancelled",
+  "error",
   "failed",
+  "expired",
 ]);
 
 export type ScheduledMessageStatus = z.infer<typeof ScheduledMessageStatusSchema>;
@@ -29,6 +38,8 @@ export const ScheduledMessageSchema = z.object({
     .enum(["image", "video", "audio", "document", "sticker", "voice", "gif"])
     .nullable(),
   pollQuestion: z.string().nullable(),
+  pollOptions: z.array(z.string()).nullable().optional(),
+  pollAllowMultiple: z.boolean().nullable().optional(),
   status: ScheduledMessageStatusSchema,
   sendAt: z.string().datetime({ offset: true }).nullable(),
   createdAt: z.string().datetime({ offset: true }),

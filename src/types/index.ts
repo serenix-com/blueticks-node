@@ -63,6 +63,18 @@ export {
   type ScheduledMessageStatus,
 } from "./scheduled-messages";
 export {
+  SunoClipSchema,
+  SunoClipStatusSchema,
+  SunoGenerationSchema,
+  SunoUploadSchema,
+  SunoAccountSchema,
+  type SunoClip,
+  type SunoClipStatus,
+  type SunoGeneration,
+  type SunoUpload,
+  type SunoAccount,
+} from "./suno";
+export {
   WebhookSchema,
   WebhookStatusSchema,
   WebhookEventTypeSchema,

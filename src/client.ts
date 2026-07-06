@@ -13,6 +13,7 @@ import { GroupsResource } from "./resources/groups";
 import { MessagesResource } from "./resources/messages";
 import { NewslettersResource } from "./resources/newsletters";
 import { ScheduledMessagesResource } from "./resources/scheduled-messages";
+import { SunoResource } from "./resources/suno";
 import type { Ping } from "./types/ping";
 
 const DEFAULT_BASE_URL = "https://api.blueticks.co";
@@ -40,6 +41,7 @@ export class Blueticks {
   readonly messages: MessagesResource;
   readonly newsletters: NewslettersResource;
   readonly scheduledMessages: ScheduledMessagesResource;
+  readonly suno: SunoResource;
   private readonly transport: Transport;
   readonly baseUrl: string;
 
@@ -76,6 +78,7 @@ export class Blueticks {
     this.messages = new MessagesResource(this);
     this.newsletters = new NewslettersResource(this);
     this.scheduledMessages = new ScheduledMessagesResource(this);
+    this.suno = new SunoResource(this);
   }
 
   async ping(opts: { signal?: AbortSignal } = {}): Promise<Ping> {

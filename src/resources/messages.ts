@@ -71,7 +71,7 @@ export class MessagesResource extends BaseResource {
   /**
    * Send message.
    *
-   * Send a message immediately to a specific chat. The body is the same FLAT shape as `POST /v1/scheduled-messages` minus `to` (derived from the URL path) and `sendAt` (this endpoint is fire-and-forget). Set `type` to `text`, `media`, or `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages` instead. Requires `messages:write`.
+   * Send a message immediately to a specific chat. The body is the same FLAT shape as `POST /v1/scheduled-messages/{chatId}` minus `sendAt` (this endpoint is fire-and-forget). Set `type` to `text`, `media`, or `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages/{chatId}` instead. Requires `messages:write`.
    */
   async send(
     chatId: string,
@@ -185,7 +185,7 @@ export class MessagesResource extends BaseResource {
   /**
    * Load older messages.
    *
-   * Asks the engine to pull older history from the connected phone for chats that haven`t been fully synced yet. Use this once before paginating with `since` if you need messages older than what`s already cached. Requires `chats:read`.
+   * Asks the engine to pull older history from the connected phone for chats that haven't been fully synced yet. Use this once before paginating with `since` if you need messages older than what's already cached. Requires `chats:read`.
    */
   async loadOlder(
     chatId: string,
