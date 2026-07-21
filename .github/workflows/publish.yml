@@ -3,6 +3,14 @@ name: Publish to npm
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+
+# OIDC trusted publishing (npm) — no long-lived token. The trust is configured on
+# the npmjs 'blueticks' package (Settings → Trusted Publisher) for this repo +
+# workflow + the 'npm' environment. Requires npm >= 11.5.1 for OIDC.
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   publish:
@@ -16,8 +24,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+      - run: npm install -g npm@latest
       - run: npm ci
       - run: npm run build
       - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
