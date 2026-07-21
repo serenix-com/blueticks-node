@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SunoClipStatusSchema = z.enum([
+export const SongClipStatusSchema = z.enum([
   "submitted",
   "queued",
   "running",
@@ -8,44 +8,46 @@ export const SunoClipStatusSchema = z.enum([
   "complete",
   "error",
 ]);
-export type SunoClipStatus = z.infer<typeof SunoClipStatusSchema>;
 
-/**
- * A single generated song variant. Poll it by id with
- * `GET /v1/suno/songs/{id}` until `status` is `complete` (or `error`).
- */
-export const SunoClipSchema = z.object({
+export type SongClipStatus = z.infer<typeof SongClipStatusSchema>;
+
+/** A single generated Suno clip. */
+export const SongClipSchema = z.object({
   id: z.string(),
-  status: SunoClipStatusSchema,
-  audioUrl: z.string().nullable(),
-  imageUrl: z.string().nullable(),
-  title: z.string().nullable(),
-  durationSec: z.number().nullable(),
-  model: z.string().nullable(),
-  errorType: z.string().nullable().optional(),
-  errorMessage: z.string().nullable().optional(),
+  status: SongClipStatusSchema,
+  audioUrl: z.string().nullish(),
+  imageUrl: z.string().nullish(),
+  title: z.string().nullish(),
+  durationSec: z.number().nullish(),
+  model: z.string().nullish(),
+  errorType: z.string().nullish(),
+  errorMessage: z.string().nullish(),
 });
-export type SunoClip = z.infer<typeof SunoClipSchema>;
 
-/** Result of submitting a generation — a batch id plus its clip variants. */
-export const SunoGenerationSchema = z.object({
+export type SongClip = z.infer<typeof SongClipSchema>;
+
+/** Response of `POST /v1/suno/songs`. */
+export const GenerateSongResponseSchema = z.object({
   jobId: z.string(),
-  clips: z.array(SunoClipSchema),
+  clips: z.array(SongClipSchema),
 });
-export type SunoGeneration = z.infer<typeof SunoGenerationSchema>;
 
-/** Result of uploading reference audio. */
-export const SunoUploadSchema = z.object({
+export type GenerateSongResponse = z.infer<typeof GenerateSongResponseSchema>;
+
+/** Response of `POST /v1/suno/uploads`. */
+export const CreateUploadResponseSchema = z.object({
   uploadId: z.string(),
   status: z.string(),
 });
-export type SunoUpload = z.infer<typeof SunoUploadSchema>;
 
-/** Credits, monthly usage, and plan on the connected Suno account. */
+export type CreateUploadResponse = z.infer<typeof CreateUploadResponseSchema>;
+
+/** Response of `GET /v1/suno/account`. */
 export const SunoAccountSchema = z.object({
   creditsLeft: z.number(),
-  monthlyLimit: z.number().nullable(),
-  monthlyUsage: z.number().nullable(),
-  plan: z.string().nullable(),
+  monthlyLimit: z.number().nullish(),
+  monthlyUsage: z.number().nullish(),
+  plan: z.string().nullish(),
 });
+
 export type SunoAccount = z.infer<typeof SunoAccountSchema>;

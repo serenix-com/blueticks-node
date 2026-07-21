@@ -1,6 +1,43 @@
 import { z } from "zod";
 
-export const ScheduledMessageStatusSchema = z.enum([
+/** WhatsApp message key attached to a sent/queued message. */
+export const WaMessageKeySchema = z.object({
+  fromMe: z.boolean(),
+  remote: z.string().nullish(),
+  id: z.string().nullish(),
+  _serialized: z.string().nullish(),
+  participant: z.string().nullish(),
+});
+
+export type WaMessageKey = z.infer<typeof WaMessageKeySchema>;
+
+/** Rich link-preview card attached to a message. */
+export const LinkPreviewSchema = z.object({
+  title: z.string().nullish(),
+  description: z.string().nullish(),
+  canonicalUrl: z.string().nullish(),
+  thumbnail: z.string().nullish(),
+});
+
+export type LinkPreview = z.infer<typeof LinkPreviewSchema>;
+
+export const MessageKindSchema = z.enum(["text", "media", "poll"]);
+
+export type MessageKind = z.infer<typeof MessageKindSchema>;
+
+export const MediaKindSchema = z.enum([
+  "image",
+  "video",
+  "audio",
+  "document",
+  "sticker",
+  "voice",
+  "gif",
+]);
+
+export type MediaKind = z.infer<typeof MediaKindSchema>;
+
+export const MessageStatusSchema = z.enum([
   "pending",
   "before-wa-send",
   "bt-sent",
@@ -18,38 +55,34 @@ export const ScheduledMessageStatusSchema = z.enum([
   "expired",
 ]);
 
-export type ScheduledMessageStatus = z.infer<typeof ScheduledMessageStatusSchema>;
+export type MessageStatus = z.infer<typeof MessageStatusSchema>;
 
-const LinkPreviewResponseSchema = z.object({
-  title: z.string().nullable(),
-  description: z.string().nullable(),
-  canonicalUrl: z.string().nullable(),
-  thumbnail: z.string().nullable(),
-}).nullable();
-
-export const ScheduledMessageSchema = z.object({
-  id: z.string().nullable(),
-  key: z.string().nullable(),
+/**
+ * A sent or scheduled message, as returned by the Scheduled Messages
+ * endpoints and by `POST /v1/messages/{chatId}` (direct send).
+ */
+export const MessageResponseSchema = z.object({
+  id: z.string().nullish(),
+  waMessageKey: WaMessageKeySchema.nullish(),
   to: z.string(),
-  type: z.enum(["text", "media", "poll"]),
-  text: z.string().nullable(),
-  mediaUrl: z.string().nullable(),
-  mediaKind: z
-    .enum(["image", "video", "audio", "document", "sticker", "voice", "gif"])
-    .nullable(),
-  pollQuestion: z.string().nullable(),
-  pollOptions: z.array(z.string()).nullable().optional(),
-  pollAllowMultiple: z.boolean().nullable().optional(),
-  status: ScheduledMessageStatusSchema,
-  sendAt: z.string().datetime({ offset: true }).nullable(),
+  type: MessageKindSchema,
+  text: z.string().nullish(),
+  mediaUrl: z.string().nullish(),
+  mediaKind: MediaKindSchema.nullish(),
+  pollQuestion: z.string().nullish(),
+  pollOptions: z.array(z.string()).nullish(),
+  pollAllowMultiple: z.boolean().nullish(),
+  status: MessageStatusSchema,
+  sendAt: z.string().datetime({ offset: true }).nullish(),
   createdAt: z.string().datetime({ offset: true }),
-  confirmedAt: z.string().datetime({ offset: true }).nullable(),
-  receivedAt: z.string().datetime({ offset: true }).nullable(),
-  readAt: z.string().datetime({ offset: true }).nullable(),
-  playedAt: z.string().datetime({ offset: true }).nullable(),
-  failedAt: z.string().datetime({ offset: true }).nullable(),
-  failureReason: z.string().nullable(),
-  linkPreview: LinkPreviewResponseSchema.optional(),
+  confirmedAt: z.string().datetime({ offset: true }).nullish(),
+  receivedAt: z.string().datetime({ offset: true }).nullish(),
+  readAt: z.string().datetime({ offset: true }).nullish(),
+  playedAt: z.string().datetime({ offset: true }).nullish(),
+  failedAt: z.string().datetime({ offset: true }).nullish(),
+  failureReason: z.string().nullish(),
+  secret: z.string().nullish(),
+  linkPreview: LinkPreviewSchema.nullish(),
 });
 
-export type ScheduledMessage = z.infer<typeof ScheduledMessageSchema>;
+export type MessageResponse = z.infer<typeof MessageResponseSchema>;

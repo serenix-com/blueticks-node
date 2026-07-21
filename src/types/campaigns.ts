@@ -12,7 +12,7 @@ export const CampaignStatusSchema = z.enum([
 export type CampaignStatus = z.infer<typeof CampaignStatusSchema>;
 
 export const CampaignSchema = z.object({
-  id: z.string(),
+  cmpId: z.string(),
   name: z.string(),
   audienceId: z.string(),
   status: CampaignStatusSchema,
@@ -21,11 +21,10 @@ export const CampaignSchema = z.object({
   deliveredCount: z.number().int(),
   readCount: z.number().int(),
   failedCount: z.number().int(),
-  from: z.string().nullable(),
   createdAt: z.string().datetime({ offset: true }),
-  startedAt: z.string().datetime({ offset: true }).nullable(),
-  completedAt: z.string().datetime({ offset: true }).nullable(),
-  abortedAt: z.string().datetime({ offset: true }).nullable(),
+  startedAt: z.string().datetime({ offset: true }).nullish(),
+  completedAt: z.string().datetime({ offset: true }).nullish(),
+  abortedAt: z.string().datetime({ offset: true }).nullish(),
 });
 
 export type Campaign = z.infer<typeof CampaignSchema>;

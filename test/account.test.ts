@@ -12,26 +12,32 @@ describe("client.account.retrieve", () => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/account");
       return jsonResponse(200, {
-        id: "acc_1",
-        name: "Acme",
-        timezone: "America/New_York",
-        createdAt: "2026-04-22T10:00:00Z",
+        success: true,
+        data: {
+          id: "acc_1",
+          name: "Acme",
+          userEmail: "ops@acme.test",
+          timezone: "America/New_York",
+          createdAt: "2026-04-22T10:00:00Z",
+        },
       });
     });
     const result = await c.account.retrieve();
     expect(typeof result.id).toBe("string");
     expect(result.id).toBe("acc_1");
     expect(result.name).toBe("Acme");
+    expect(result.userEmail).toBe("ops@acme.test");
     expect(result.timezone).toBe("America/New_York");
     expect(result.createdAt).toBe("2026-04-22T10:00:00Z");
   });
 
-  it("accepts null timezone", async () => {
+  it("omits optional timezone/userEmail", async () => {
     const c = mkClient(() =>
-      jsonResponse(200, { id: "acc_2", name: "Nobody", timezone: null, createdAt: "2026-01-01T00:00:00Z" }),
+      jsonResponse(200, { success: true, data: { id: "acc_2", name: "Nobody", createdAt: "2026-01-01T00:00:00Z" } }),
     );
     const result = await c.account.retrieve();
-    expect(result.timezone).toBeNull();
+    expect(result.timezone).toBeUndefined();
+    expect(result.userEmail).toBeUndefined();
   });
 
   it("propagates AuthenticationError on 401", async () => {

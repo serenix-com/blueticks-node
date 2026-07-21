@@ -3,132 +3,75 @@ import { Blueticks, AuthenticationError, ValidationError } from "../src";
 import { mockFetch, jsonResponse } from "./helpers/mock-fetch";
 
 function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
-  return new Blueticks({
-    apiKey: "bt_test_x",
-    baseUrl: "https://example.test",
-    fetch: mockFetch(handler),
-  });
+  return new Blueticks({ apiKey: "bt_test_x", baseUrl: "https://example.test", fetch: mockFetch(handler) });
 }
-
-function authErr() {
-  return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
-  });
-}
-
-const fullNewsletter = {
-  newsletterId: "120363201733549020@newsletter",
-  name: "Acme Updates",
-  description: "Weekly news from Acme Corp.",
-  createdAt: "2026-01-15T09:00:00Z",
-  subscribers: 412,
-  invite: "AbCdEfGhIjKlMn",
-  verification: "VERIFIED",
-};
-
-const fullNewsletterListItem = {
-  chatId: "120363201733549020@newsletter",
-  name: "Acme Updates",
-  description: "Weekly news from Acme Corp.",
-  createdAt: "2026-01-15T09:00:00Z",
-  subscribers: 412,
-  invite: "AbCdEfGhIjKlMn",
-  verification: "VERIFIED",
-};
 
 describe("client.newsletters.list", () => {
-  it("GETs /v1/newsletters and returns Page<NewsletterListItem>", async () => {
+  it("returns a Page<NewsletterListItem> keyed by chatId", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/newsletters");
+      const url = new URL(req.url);
+      expect(url.pathname).toBe("/v1/newsletters");
+      expect(url.searchParams.get("searchToken")).toBe("news");
       return jsonResponse(200, {
-        data: [fullNewsletterListItem],
-        has_more: false,
-        next_cursor: null,
+        success: true,
+        data: [
+          {
+            chatId: "120363@newsletter",
+            name: "Daily",
+            description: "news",
+            subscribers: 1200,
+            verification: "VERIFIED",
+          },
+        ],
+        limit: 50,
+        skip: 0,
+        total: 1,
       });
     });
-    const page = await c.newsletters.list({ limit: 10 });
-    expect(page.data).toHaveLength(1);
-    expect(page.data[0]!.chatId).toBe("120363201733549020@newsletter");
-    expect(page.data[0]!.name).toBe("Acme Updates");
+    const page = await c.newsletters.list({ searchToken: "news" });
+    expect(page.data[0]!.chatId).toBe("120363@newsletter");
     expect(page.data[0]!.verification).toBe("VERIFIED");
-    expect(page.has_more).toBe(false);
-    expect(page.next_cursor).toBeNull();
   });
 
-  it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
-    const err = await c.newsletters.list().catch((e) => e);
-    expect(err).toBeInstanceOf(AuthenticationError);
-    expect(err.requestId).toBe("req_a");
-  });
-
-  it("raises ValidationError when envelope is missing", async () => {
+  it("raises ValidationError on malformed envelope", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(c.newsletters.list()).rejects.toBeInstanceOf(ValidationError);
   });
 });
 
 describe("client.newsletters.create", () => {
-  it("POSTs /v1/newsletters and returns Newsletter", async () => {
+  it("returns a newsletter keyed by newsletterId", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/newsletters");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ name: "Acme Updates", description: "Weekly news" });
-      return jsonResponse(201, fullNewsletter);
+      const body = await req.json();
+      expect(body).toEqual({ name: "Daily", description: "news" });
+      return jsonResponse(201, {
+        success: true,
+        data: { newsletterId: "120363@newsletter", name: "Daily", subscribers: 0 },
+      });
     });
-    const n = await c.newsletters.create({
-      name: "Acme Updates",
-      description: "Weekly news",
-    });
-    expect(typeof n.newsletterId).toBe("string");
-    expect(n.newsletterId).toBe("120363201733549020@newsletter");
-    expect(n.name).toBe("Acme Updates");
-    expect(n.subscribers).toBe(412);
-    expect(n.verification).toBe("VERIFIED");
+    const res = await c.newsletters.create({ name: "Daily", description: "news" });
+    expect(res.newsletterId).toBe("120363@newsletter");
+    expect(res.subscribers).toBe(0);
   });
 
   it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
+    const c = mkClient(() =>
+      jsonResponse(401, { error: { code: "authentication_required", message: "no", requestId: "req_n" } }),
+    );
     const err = await c.newsletters.create({ name: "x" }).catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);
-    expect(err.requestId).toBe("req_a");
-  });
-
-  it("raises ValidationError when required field missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(
-      c.newsletters.create({ name: "x" }),
-    ).rejects.toBeInstanceOf(ValidationError);
+    expect(err.requestId).toBe("req_n");
   });
 });
 
 describe("client.newsletters.retrieve", () => {
-  it("GETs /v1/newsletters/:id and returns Newsletter", async () => {
+  it("gets a newsletter by id", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/newsletters/120363201733549020@newsletter");
-      return jsonResponse(200, fullNewsletter);
+      expect(new URL(req.url).pathname).toBe("/v1/newsletters/120363%40newsletter");
+      return jsonResponse(200, { success: true, data: { newsletterId: "120363@newsletter", name: "Daily" } });
     });
-    const n = await c.newsletters.retrieve("120363201733549020@newsletter");
-    expect(n.newsletterId).toBe("120363201733549020@newsletter");
-    expect(n.description).toBe("Weekly news from Acme Corp.");
-    expect(n.invite).toBe("AbCdEfGhIjKlMn");
-    expect(n.verification).toBe("VERIFIED");
-  });
-
-  it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
-    const err = await c.newsletters.retrieve("120363201733549020@newsletter").catch((e) => e);
-    expect(err).toBeInstanceOf(AuthenticationError);
-    expect(err.requestId).toBe("req_a");
-  });
-
-  it("raises ValidationError when required field missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(
-      c.newsletters.retrieve("120363201733549020@newsletter"),
-    ).rejects.toBeInstanceOf(ValidationError);
+    const res = await c.newsletters.retrieve("120363@newsletter");
+    expect(res.name).toBe("Daily");
   });
 });

@@ -1,43 +1,71 @@
 import { BaseResource } from "../base-resource";
 import {
-  ChatMessageSchema,
-  ChatMediaSchema,
-  OkResponseSchema,
+  PublicMessageSchema,
   MessageAckSchema,
-  LoadOlderMessagesResponseSchema,
-  BatchMessageAcksResponseSchema,
+  BatchMessageAckEntrySchema,
+  MediaSchema,
+  LoadOlderResultSchema,
   PinnedMessageSchema,
-  type ChatMessage,
-  type ChatMedia,
-  type OkResponse,
+  OkResultSchema,
+  type PublicMessage,
   type MessageAck,
-  type LoadOlderMessagesResponse,
-  type BatchMessageAcksResponse,
+  type BatchMessageAckEntry,
+  type Media,
+  type LoadOlderResult,
   type PinnedMessage,
+  type OkResult,
   type MessageType,
-  type SendInChatRequest,
-} from "../types/chats";
+} from "../types/messages";
 import {
-  ScheduledMessageSchema,
-  type ScheduledMessage,
+  MessageResponseSchema,
+  type MessageResponse,
+  type MediaKind,
 } from "../types/scheduled-messages";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
-
-const ChatMessagePageSchema = pageSchema(ChatMessageSchema);
-const PinnedMessagePageSchema = pageSchema(PinnedMessageSchema);
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
 export interface ListMessagesParams extends ListParams {
+  chatId?: string;
+  searchToken?: string;
   order?: "asc" | "desc";
-  query?: string;
   since?: string;
   until?: string;
   messageTypes?: MessageType[];
-  /**
-   * Optional WhatsApp JID to scope results to a single chat. Omit to search
-   * across all chats.
-   */
-  chatId?: string;
+  loadFromPhoneIfNeeded?: boolean;
+  includeMediaContent?: boolean;
 }
+
+/** Flat body accepted by `POST /v1/messages/{chatId}` (direct, fire-and-forget send). */
+export interface DirectSendMessageBody {
+  type: "text" | "media" | "poll";
+  text?: string;
+  replyTo?: string;
+  mediaUrl?: string;
+  mediaBase64?: string;
+  mediaKind?: MediaKind;
+  mediaFilename?: string;
+  pollQuestion?: string;
+  pollOptions?: string[];
+  pollAllowMultiple?: boolean;
+  secret?: string;
+  withTyping?: boolean;
+  typingSeconds?: number;
+}
+
+const PublicMessagePageSchema = pageSchema(PublicMessageSchema);
+const BatchMessageAckPageSchema = pageSchema(BatchMessageAckEntrySchema);
+const PinnedMessagePageSchema = pageSchema(PinnedMessageSchema);
+const MessageResponseEnvelope = dataEnvelope(MessageResponseSchema);
+const PublicMessageEnvelope = dataEnvelope(PublicMessageSchema);
+const MessageAckEnvelope = dataEnvelope(MessageAckSchema);
+const MediaEnvelope = dataEnvelope(MediaSchema);
+const LoadOlderResultEnvelope = dataEnvelope(LoadOlderResultSchema);
+const OkResultEnvelope = dataEnvelope(OkResultSchema);
 
 export class MessagesResource extends BaseResource {
   /**
@@ -47,23 +75,36 @@ export class MessagesResource extends BaseResource {
    */
   async list(
     params: ListMessagesParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<ChatMessage>> {
-    const { signal, order, query, since, until, messageTypes, chatId, ...rest } = params;
-    const q = buildListQuery(rest);
-    if (order !== undefined) q.order = order;
-    if (query !== undefined) q.query = query;
-    if (since !== undefined) q.since = since;
-    if (until !== undefined) q.until = until;
+  ): Promise<Page<PublicMessage>> {
+    const {
+      signal,
+      chatId,
+      searchToken,
+      order,
+      since,
+      until,
+      messageTypes,
+      loadFromPhoneIfNeeded,
+      includeMediaContent,
+      ...listParams
+    } = params;
+    const query = buildListQuery(listParams);
+    if (chatId !== undefined) query.chatId = chatId;
+    if (searchToken !== undefined) query.searchToken = searchToken;
+    if (order !== undefined) query.order = order;
+    if (since !== undefined) query.since = since;
+    if (until !== undefined) query.until = until;
     if (messageTypes !== undefined && messageTypes.length > 0) {
-      // Server accepts comma-separated form for OpenAPI `style: form, explode: false`.
-      q.messageTypes = messageTypes.join(",");
+      // Server accepts the comma-separated form for `style: form, explode: false`.
+      query.messageTypes = messageTypes.join(",");
     }
-    if (chatId !== undefined) q.chatId = chatId;
+    if (loadFromPhoneIfNeeded !== undefined) query.loadFromPhoneIfNeeded = loadFromPhoneIfNeeded;
+    if (includeMediaContent !== undefined) query.includeMediaContent = includeMediaContent;
     return this.client.request({
       method: "GET",
       path: "/v1/messages",
-      query: q,
-      schema: ChatMessagePageSchema,
+      query,
+      schema: PublicMessagePageSchema,
       signal,
     });
   }
@@ -71,18 +112,18 @@ export class MessagesResource extends BaseResource {
   /**
    * Send message.
    *
-   * Send a message immediately to a specific chat. The body is the same FLAT shape as `POST /v1/scheduled-messages/{chatId}` minus `sendAt` (this endpoint is fire-and-forget). Set `type` to `text`, `media`, or `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key under `key`. For scheduled or queue-managed sends use `POST /v1/scheduled-messages/{chatId}` instead. Requires `messages:write`.
+   * Send a message immediately to a specific chat. The body is the same FLAT shape as `POST /v1/scheduled-messages` minus `to` (derived from the URL path) and `sendAt` (this endpoint is fire-and-forget). Set `type` to `text`, `media`, or `poll`. The dispatch is direct — no DB row is created; the response carries the WhatsApp wire key. For scheduled or queue-managed sends use `POST /v1/scheduled-messages` instead. Requires `messages:write`.
    */
   async send(
     chatId: string,
-    body: SendInChatRequest,
+    body: DirectSendMessageBody,
     opts: { idempotencyKey?: string; signal?: AbortSignal } = {},
-  ): Promise<ScheduledMessage> {
+  ): Promise<MessageResponse> {
     return this.client.request({
       method: "POST",
       path: `/v1/messages/${encodeURIComponent(chatId)}`,
       body,
-      schema: ScheduledMessageSchema,
+      schema: MessageResponseEnvelope,
       idempotencyKey: opts.idempotencyKey,
       signal: opts.signal,
     });
@@ -91,17 +132,17 @@ export class MessagesResource extends BaseResource {
   /**
    * Get message.
    *
-   * Fetch a single message by its WhatsApp message key. Requires `chats:read`.
+   * Fetch a single message by its complete WhatsApp message key. Requires `chats:read`.
    */
   async get(
     waMessageKey: string,
     opts: { chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<ChatMessage> {
+  ): Promise<PublicMessage> {
     return this.client.request({
       method: "GET",
       path: `/v1/messages/${encodeURIComponent(waMessageKey)}`,
       query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      schema: ChatMessageSchema,
+      schema: PublicMessageEnvelope,
       signal: opts.signal,
     });
   }
@@ -119,7 +160,114 @@ export class MessagesResource extends BaseResource {
       method: "GET",
       path: `/v1/messages/ack/${encodeURIComponent(waMessageKey)}`,
       query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      schema: MessageAckSchema,
+      schema: MessageAckEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Batch get message acks.
+   *
+   * Get delivery status for up to 200 sent messages in one call. Useful for campaign dashboards / status reconciliation. Requires `chats:read`.
+   */
+  async batchAcks(
+    body: { messageKeys: string[]; chatId?: string },
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Page<BatchMessageAckEntry>> {
+    return this.client.request({
+      method: "POST",
+      path: "/v1/messages/acks",
+      body,
+      schema: BatchMessageAckPageSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Load older messages.
+   *
+   * Asks the engine to pull older history from the connected phone for chats that haven't been fully synced yet. Use this once before paginating with `since` if you need messages older than what's already cached. Requires `chats:read`.
+   */
+  async loadOlder(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<LoadOlderResult> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/messages/load_older/${encodeURIComponent(chatId)}`,
+      schema: LoadOlderResultEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Get message media.
+   *
+   * Download the media attached to a WhatsApp message (image, video, document, audio). Returns either a hosted URL (`url`) or inline `dataBase64`, plus mimetype + filename. Pass `maxAttempts: 1` to skip the poll and return immediately. Requires `chats:read`.
+   */
+  async getMedia(
+    waMessageKey: string,
+    opts: { chatId?: string; maxAttempts?: number; signal?: AbortSignal } = {},
+  ): Promise<Media> {
+    const query: Record<string, string | number | boolean | undefined> = {};
+    if (opts.chatId !== undefined) query.chatId = opts.chatId;
+    if (opts.maxAttempts !== undefined) query.maxAttempts = opts.maxAttempts;
+    return this.client.request({
+      method: "GET",
+      path: `/v1/messages/media/${encodeURIComponent(waMessageKey)}`,
+      query,
+      schema: MediaEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * List pinned messages.
+   *
+   * List the currently pinned messages in a chat. Requires `chats:read`.
+   */
+  async listPinned(
+    chatId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<Page<PinnedMessage>> {
+    return this.client.request({
+      method: "GET",
+      path: `/v1/messages/pinned/${encodeURIComponent(chatId)}`,
+      schema: PinnedMessagePageSchema,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Pin message.
+   *
+   * Pin a message to the top of its chat. Optionally pass a `duration` (seconds) in the body to control when the pin expires — defaults to 7 days. Requires `chats:write`.
+   */
+  async pin(
+    waMessageKey: string,
+    opts: { duration?: number; chatId?: string; signal?: AbortSignal } = {},
+  ): Promise<OkResult> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/messages/pin/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
+      body: opts.duration !== undefined ? { duration: opts.duration } : undefined,
+      schema: OkResultEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Unpin message.
+   *
+   * Remove an existing pin from a message. Requires `chats:write`.
+   */
+  async unpin(
+    waMessageKey: string,
+    opts: { chatId?: string; signal?: AbortSignal } = {},
+  ): Promise<OkResult> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/messages/unpin/${encodeURIComponent(waMessageKey)}`,
+      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
+      schema: OkResultEnvelope,
       signal: opts.signal,
     });
   }
@@ -133,129 +281,14 @@ export class MessagesResource extends BaseResource {
     waMessageKey: string,
     body: { emoji: string },
     opts: { chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<OkResponse> {
+  ): Promise<OkResult> {
     return this.client.request({
       method: "POST",
       path: `/v1/messages/reactions/${encodeURIComponent(waMessageKey)}`,
       query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
       body,
-      schema: OkResponseSchema,
+      schema: OkResultEnvelope,
       signal: opts.signal,
-    });
-  }
-
-  /**
-   * Pin message.
-   *
-   * Pin a message to the top of its chat. Optionally pass a `duration` (seconds)
-   * to control when the pin expires — defaults to 7 days. Requires `chats:write`.
-   */
-  async pin(
-    waMessageKey: string,
-    opts: { duration?: number; chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<OkResponse> {
-    return this.client.request({
-      method: "POST",
-      path: `/v1/messages/pin/${encodeURIComponent(waMessageKey)}`,
-      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      body: opts.duration !== undefined ? { duration: opts.duration } : {},
-      schema: OkResponseSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Unpin message.
-   *
-   * Remove an existing pin from a message. Requires `chats:write`.
-   */
-  async unpin(
-    waMessageKey: string,
-    opts: { chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<OkResponse> {
-    return this.client.request({
-      method: "POST",
-      path: `/v1/messages/unpin/${encodeURIComponent(waMessageKey)}`,
-      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      schema: OkResponseSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Load older messages.
-   *
-   * Asks the engine to pull older history from the connected phone for chats that haven't been fully synced yet. Use this once before paginating with `since` if you need messages older than what's already cached. Requires `chats:read`.
-   */
-  async loadOlder(
-    chatId: string,
-    opts: { signal?: AbortSignal } = {},
-  ): Promise<LoadOlderMessagesResponse> {
-    return this.client.request({
-      method: "POST",
-      path: `/v1/messages/load_older/${encodeURIComponent(chatId)}`,
-      schema: LoadOlderMessagesResponseSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Get message media.
-   *
-   * Download the media attached to a WhatsApp message (image, video, document, audio).
-   * Returns either a hosted URL (`url`) or inline `dataBase64`, plus mimetype + filename.
-   *
-   * CAVEAT: for own-sent newsletter media, the bytes returned may be a WA-generated
-   * preview JPEG (~7KB) rather than the original — `originalQuality` is `false` when
-   * this fallback is in effect. Requires `chats:read`.
-   */
-  async getMedia(
-    waMessageKey: string,
-    opts: { chatId?: string; signal?: AbortSignal } = {},
-  ): Promise<ChatMedia> {
-    return this.client.request({
-      method: "GET",
-      path: `/v1/messages/media/${encodeURIComponent(waMessageKey)}`,
-      query: opts.chatId !== undefined ? { chatId: opts.chatId } : undefined,
-      schema: ChatMediaSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Batch get message acks.
-   *
-   * Get delivery status for up to 200 sent messages in one call. Useful for campaign dashboards / status reconciliation. Requires `chats:read`.
-   */
-  async batchAcks(
-    body: { messageKeys: string[]; chatId?: string },
-    opts: { signal?: AbortSignal } = {},
-  ): Promise<BatchMessageAcksResponse> {
-    return this.client.request({
-      method: "POST",
-      path: "/v1/messages/acks",
-      body,
-      schema: BatchMessageAcksResponseSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * List pinned messages.
-   *
-   * List the currently pinned messages in a chat. Requires `chats:read`.
-   */
-  async listPinned(
-    chatId: string,
-    params: ListParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<PinnedMessage>> {
-    const { signal, ...rest } = params;
-    return this.client.request({
-      method: "GET",
-      path: `/v1/messages/pinned/${encodeURIComponent(chatId)}`,
-      query: buildListQuery(rest),
-      schema: PinnedMessagePageSchema,
-      signal,
     });
   }
 }

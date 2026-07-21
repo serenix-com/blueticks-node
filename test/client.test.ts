@@ -35,7 +35,7 @@ describe("Blueticks constructor", () => {
     const c = new Blueticks({
       fetch: mockFetch((req) => {
         gotUrl = req.url;
-        return jsonResponse(200, { account_id: "a", key_prefix: "p1234567", scopes: [] });
+        return jsonResponse(200, { success: true, data: { api: "ok", accountId: "a", whatsappConnections: [] } });
       }),
     });
     await c.ping();
@@ -50,7 +50,7 @@ describe("Blueticks constructor", () => {
       baseUrl: "https://explicit.example.test",
       fetch: mockFetch((req) => {
         gotUrl = req.url;
-        return jsonResponse(200, { account_id: "a", key_prefix: "p1234567", scopes: [] });
+        return jsonResponse(200, { success: true, data: { api: "ok", accountId: "a", whatsappConnections: [] } });
       }),
     });
     await c.ping();
@@ -70,7 +70,7 @@ describe("Blueticks constructor", () => {
     const c = new Blueticks({
       fetch: mockFetch((req) => {
         ua = req.headers.get("user-agent") ?? "";
-        return jsonResponse(200, { account_id: "a", key_prefix: "p1234567", scopes: [] });
+        return jsonResponse(200, { success: true, data: { api: "ok", accountId: "a", whatsappConnections: [] } });
       }),
     });
     await c.ping();
@@ -84,7 +84,7 @@ describe("Blueticks constructor", () => {
       userAgent: "myapp/1.2",
       fetch: mockFetch((req) => {
         ua = req.headers.get("user-agent") ?? "";
-        return jsonResponse(200, { account_id: "a", key_prefix: "p1234567", scopes: [] });
+        return jsonResponse(200, { success: true, data: { api: "ok", accountId: "a", whatsappConnections: [] } });
       }),
     });
     await c.ping();

@@ -1,51 +1,81 @@
 import { BaseResource } from "../base-resource";
 import {
   ChatSchema,
-  ParticipantListSchema,
-  OkResponseSchema,
-  ChatRefSchema,
+  ParticipantSchema,
+  ChatMutationResultSchema,
   type Chat,
-  type ParticipantList,
-  type OkResponse,
-  type ChatRef,
+  type Participant,
+  type ChatMutationResult,
 } from "../types/chats";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
-
-const ChatPageSchema = pageSchema(ChatSchema);
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
 export interface ListChatsParams extends ListParams {
-  query?: string;
+  searchToken?: string;
+  filter?: "groups" | "contacts" | "newsletters";
+  includeLastMessage?: boolean;
+  includeExtendedInfo?: boolean;
+  includeWithoutName?: boolean;
+  includeArchive?: boolean;
 }
+
+export interface ListParticipantsParams extends ListParams {
+  searchToken?: string;
+}
+
+const ChatPageSchema = pageSchema(ChatSchema);
+const ParticipantPageSchema = pageSchema(ParticipantSchema);
+const ChatEnvelope = dataEnvelope(ChatSchema);
+const ChatMutationEnvelope = dataEnvelope(ChatMutationResultSchema);
 
 export class ChatsResource extends BaseResource {
   /**
    * List chats.
    *
-   * Cursor-paginated list of recent chats, newest first. Use `query` for free-text search across chat names. Requires `chats:read`.
+   * List the chats (conversations) the connected WhatsApp engine sees, most-recent first. Offset-paginated via `limit` + `skip`, with an optional case-insensitive substring search on the chat name via `searchToken` and a `filter` to restrict to one chat kind. Requires `chats:read`.
    */
   async list(params: ListChatsParams & { signal?: AbortSignal } = {}): Promise<Page<Chat>> {
-    const { signal, query, ...rest } = params;
-    const q = buildListQuery(rest);
-    if (query !== undefined) q.query = query;
+    const {
+      signal,
+      searchToken,
+      filter,
+      includeLastMessage,
+      includeExtendedInfo,
+      includeWithoutName,
+      includeArchive,
+      ...listParams
+    } = params;
+    const query = buildListQuery(listParams);
+    if (searchToken !== undefined) query.searchToken = searchToken;
+    if (filter !== undefined) query.filter = filter;
+    if (includeLastMessage !== undefined) query.includeLastMessage = includeLastMessage;
+    if (includeExtendedInfo !== undefined) query.includeExtendedInfo = includeExtendedInfo;
+    if (includeWithoutName !== undefined) query.includeWithoutName = includeWithoutName;
+    if (includeArchive !== undefined) query.includeArchive = includeArchive;
     return this.client.request({
       method: "GET",
       path: "/v1/chats",
-      query: q,
+      query,
       schema: ChatPageSchema,
       signal,
     });
   }
 
   /**
-   * Retrieve chat.
+   * Get chat.
    *
-   * Fetch a single chat by its WhatsApp JID (`chat_id`). Requires `chats:read`.
+   * Retrieve a single chat by its id — a phone number in international format (e.g. +14155551234) or a WhatsApp JID (`@c.us`, `@g.us`, or `@newsletter`). Requires `chats:read`.
    */
-  async get(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<Chat> {
+  async get(id: string, opts: { signal?: AbortSignal } = {}): Promise<Chat> {
     return this.client.request({
       method: "GET",
-      path: `/v1/chats/${encodeURIComponent(chatId)}`,
-      schema: ChatSchema,
+      path: `/v1/chats/${encodeURIComponent(id)}`,
+      schema: ChatEnvelope,
       signal: opts.signal,
     });
   }
@@ -57,14 +87,16 @@ export class ChatsResource extends BaseResource {
    */
   async listParticipants(
     chatId: string,
-    params: ListParams & { signal?: AbortSignal } = {},
-  ): Promise<ParticipantList> {
-    const { signal, ...rest } = params;
+    params: ListParticipantsParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Participant>> {
+    const { signal, searchToken, ...listParams } = params;
+    const query = buildListQuery(listParams);
+    if (searchToken !== undefined) query.searchToken = searchToken;
     return this.client.request({
       method: "GET",
       path: `/v1/chats/${encodeURIComponent(chatId)}/participants`,
-      query: buildListQuery(rest),
-      schema: ParticipantListSchema,
+      query,
+      schema: ParticipantPageSchema,
       signal,
     });
   }
@@ -74,11 +106,11 @@ export class ChatsResource extends BaseResource {
    *
    * Clears the unread badge on the connected engine for the given chat. Requires `chats:write`.
    */
-  async markRead(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<OkResponse> {
+  async markRead(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<ChatMutationResult> {
     return this.client.request({
       method: "POST",
       path: `/v1/chats/${encodeURIComponent(chatId)}/mark_read`,
-      schema: OkResponseSchema,
+      schema: ChatMutationEnvelope,
       signal: opts.signal,
     });
   }
@@ -88,11 +120,11 @@ export class ChatsResource extends BaseResource {
    *
    * Archives the given chat on the connected engine, hiding it from the main chat list. Requires `chats:write`.
    */
-  async archive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<OkResponse> {
+  async archive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<ChatMutationResult> {
     return this.client.request({
       method: "POST",
       path: `/v1/chats/${encodeURIComponent(chatId)}/archive`,
-      schema: OkResponseSchema,
+      schema: ChatMutationEnvelope,
       signal: opts.signal,
     });
   }
@@ -102,25 +134,11 @@ export class ChatsResource extends BaseResource {
    *
    * Removes the given chat from the archive, restoring it to the main chat list. Requires `chats:write`.
    */
-  async unarchive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<OkResponse> {
+  async unarchive(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<ChatMutationResult> {
     return this.client.request({
       method: "POST",
       path: `/v1/chats/${encodeURIComponent(chatId)}/unarchive`,
-      schema: OkResponseSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Open chat in engine.
-   *
-   * Brings the chat to the foreground on the connected WhatsApp Web client (creates the chat if it doesn`t exist yet for the engine). Useful before issuing follow-up reads on a fresh JID. Requires `chats:write`.
-   */
-  async open(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<ChatRef> {
-    return this.client.request({
-      method: "POST",
-      path: `/v1/chats/${encodeURIComponent(chatId)}/open`,
-      schema: ChatRefSchema,
+      schema: ChatMutationEnvelope,
       signal: opts.signal,
     });
   }

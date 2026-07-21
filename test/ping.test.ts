@@ -12,34 +12,31 @@ describe("client.ping", () => {
       expect(req.method).toBe("GET");
       expect(new URL(req.url).pathname).toBe("/v1/ping");
       return jsonResponse(200, {
-        api: "ok",
-        accountId: "acc_abc",
-        whatsappConnections: [
-          { id: "gateway_acc_1_a", type: "gateway", connected: true },
-          { id: "whatsapp_acc_2_b", type: "regular", connected: true },
-        ],
+        success: true,
+        data: {
+          api: "ok",
+          accountId: "acc_abc",
+          whatsappConnections: [{ id: "eng_1", type: "gateway", connected: true }],
+        },
       });
     });
     const result = await c.ping();
     expect(result.api).toBe("ok");
     expect(result.accountId).toBe("acc_abc");
-    expect(result.whatsappConnections).toHaveLength(2);
-    expect(result.whatsappConnections[0]).toEqual({ id: "gateway_acc_1_a", type: "gateway", connected: true });
-    expect(result.whatsappConnections[1].type).toBe("regular");
+    expect(result.whatsappConnections[0]!.id).toBe("eng_1");
+    expect(result.whatsappConnections[0]!.type).toBe("gateway");
   });
 
-  it("accepts the empty connections shape with a message", async () => {
+  it("accepts an empty connection list with message", async () => {
     const c = mkClient(() =>
       jsonResponse(200, {
-        api: "ok",
-        accountId: "acc_abc",
-        whatsappConnections: [],
-        message: "No WhatsApp engine is connected for this workspace.",
+        success: true,
+        data: { api: "ok", accountId: "acc_x", whatsappConnections: [], message: "No WhatsApp connected." },
       }),
     );
     const result = await c.ping();
     expect(result.whatsappConnections).toEqual([]);
-    expect(result.message).toContain("No WhatsApp");
+    expect(result.message).toBe("No WhatsApp connected.");
   });
 
   it("propagates AuthenticationError on 401", async () => {
@@ -54,7 +51,7 @@ describe("client.ping", () => {
   });
 
   it("raises ValidationError when required field is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, { accountId: "acc_abc" }));
+    const c = mkClient(() => jsonResponse(200, {}));
     await expect(c.ping()).rejects.toBeInstanceOf(ValidationError);
   });
 });

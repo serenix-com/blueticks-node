@@ -1,9 +1,12 @@
 import { z } from "zod";
 
-export const EngineStatusSchema = z.object({
+export const EngineSchema = z.object({
+  id: z.string(),
+  type: z.enum(["gateway", "regular"]),
   connected: z.boolean(),
-  state: z.string().nullable(),
-  stream: z.string().nullable(),
-  hasSynced: z.boolean().nullable(),
+  state: z.string().nullish(),
+  stream: z.string().nullish(),
+  hasSynced: z.boolean().nullish(),
 });
-export type EngineStatus = z.infer<typeof EngineStatusSchema>;
+
+export type Engine = z.infer<typeof EngineSchema>;

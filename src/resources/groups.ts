@@ -1,50 +1,72 @@
 import { z } from "zod";
 import { BaseResource } from "../base-resource";
-import { GroupSchema, type Group } from "../types/groups";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
+import {
+  GroupSchema,
+  GroupListItemSchema,
+  type Group,
+  type GroupListItem,
+} from "../types/groups";
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
-const VoidSchema = z.undefined();
-const GroupPageSchema = pageSchema(GroupSchema);
+export interface ListGroupsParams extends ListParams {
+  searchToken?: string;
+  includeArchive?: boolean;
+}
 
 export interface CreateGroupParams {
   name: string;
   participants: string[];
 }
+
 export interface UpdateGroupParams {
   name?: string;
   settings?: {
     announce?: boolean;
     restrict?: boolean;
-    /** Replace the group description/topic. 1–2048 chars. */
+    editInfoAdminsOnly?: boolean;
     description?: string;
   };
 }
-export interface AddMemberParams {
-  chatId: string;
+
+export interface AddMembersParams {
+  chatId?: string;
+  participants?: string[];
 }
+
 export interface SetPictureParams {
-  fileDataUrl: string;
+  fileDataUrl?: string;
+  url?: string;
   fileName?: string;
   fileMimeType?: string;
 }
+
+const GroupListItemPageSchema = pageSchema(GroupListItemSchema);
+const GroupEnvelope = dataEnvelope(GroupSchema);
 
 export class GroupsResource extends BaseResource {
   /**
    * List groups.
    *
-   * List the groups the connected WhatsApp engine sees. Supports cursor pagination (`limit`+`cursor`) and an optional case-insensitive substring search on the group name via `q`.
+   * List the groups the connected WhatsApp engine sees. Supports offset pagination (`limit`+`skip`) and an optional case-insensitive substring search on the group name via `searchToken`.
    */
   async list(
-    params: ListParams & { q?: string; signal?: AbortSignal } = {},
-  ): Promise<Page<Group>> {
-    const { signal, q, ...rest } = params;
-    const query = buildListQuery(rest) as Record<string, string | number>;
-    if (q !== undefined) query.q = q;
+    params: ListGroupsParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<GroupListItem>> {
+    const { signal, searchToken, includeArchive, ...listParams } = params;
+    const query = buildListQuery(listParams);
+    if (searchToken !== undefined) query.searchToken = searchToken;
+    if (includeArchive !== undefined) query.includeArchive = includeArchive;
     return this.client.request({
       method: "GET",
       path: "/v1/groups",
       query,
-      schema: GroupPageSchema,
+      schema: GroupListItemPageSchema,
       signal,
     });
   }
@@ -59,21 +81,25 @@ export class GroupsResource extends BaseResource {
       method: "POST",
       path: "/v1/groups",
       body,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
 
   /**
-   * Retrieve group.
+   * Get group.
    *
-   * Fetch group metadata by JID. Requires `groups:read`.
+   * Retrieve a single group by its `@g.us` id, including its subject, description, and (with `?include=participants`) its participant list. Requires `groups:read`.
    */
-  async get(groupId: string, opts: { signal?: AbortSignal } = {}): Promise<Group> {
+  async get(
+    groupId: string,
+    opts: { include?: "participants"; signal?: AbortSignal } = {},
+  ): Promise<Group> {
     return this.client.request({
       method: "GET",
       path: `/v1/groups/${encodeURIComponent(groupId)}`,
-      schema: GroupSchema,
+      query: opts.include !== undefined ? { include: opts.include } : undefined,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
@@ -92,7 +118,7 @@ export class GroupsResource extends BaseResource {
       method: "PATCH",
       path: `/v1/groups/${encodeURIComponent(groupId)}`,
       body,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
@@ -102,16 +128,30 @@ export class GroupsResource extends BaseResource {
    *
    * Add a participant to the group by chatId (JID) or phone number in international format (e.g. +14155551234). Requires `groups:write`.
    */
-  async addMember(
+  async addMembers(
     groupId: string,
-    body: AddMemberParams,
+    body: AddMembersParams,
     opts: { signal?: AbortSignal } = {},
   ): Promise<Group> {
     return this.client.request({
       method: "POST",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members`,
       body,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Leave group.
+   *
+   * Leave the group as the authenticated identity. Idempotent — succeeds with 204 even if already not a member. Requires `groups:write`.
+   */
+  async leave(groupId: string, opts: { signal?: AbortSignal } = {}): Promise<void> {
+    await this.client.request({
+      method: "DELETE",
+      path: `/v1/groups/${encodeURIComponent(groupId)}/members/me`,
+      schema: z.void(),
       signal: opts.signal,
     });
   }
@@ -129,7 +169,7 @@ export class GroupsResource extends BaseResource {
     return this.client.request({
       method: "DELETE",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}`,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
@@ -147,7 +187,7 @@ export class GroupsResource extends BaseResource {
     return this.client.request({
       method: "POST",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}/admin`,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
@@ -165,7 +205,7 @@ export class GroupsResource extends BaseResource {
     return this.client.request({
       method: "DELETE",
       path: `/v1/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(chatId)}/admin`,
-      schema: GroupSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }
@@ -173,7 +213,7 @@ export class GroupsResource extends BaseResource {
   /**
    * Set group picture.
    *
-   * Replace the group picture. Body is a base64 data URL (PNG/JPEG, ≤20 MiB). Requires `groups:write`.
+   * Replace the group picture. Provide the image as `fileDataUrl` (base64 data URL, PNG/JPEG, ≤20 MiB) or `url` (https). You can also upload a file as `multipart/form-data` with a `file` part. Requires `groups:write`.
    */
   async setPicture(
     groupId: string,
@@ -184,21 +224,7 @@ export class GroupsResource extends BaseResource {
       method: "PUT",
       path: `/v1/groups/${encodeURIComponent(groupId)}/picture`,
       body,
-      schema: GroupSchema,
-      signal: opts.signal,
-    });
-  }
-
-  /**
-   * Leave group.
-   *
-   * Leave the group as the authenticated identity. Idempotent — succeeds with 204 even if already not a member. Requires `groups:write`.
-   */
-  async leave(groupId: string, opts: { signal?: AbortSignal } = {}): Promise<void> {
-    await this.client.request({
-      method: "DELETE",
-      path: `/v1/groups/${encodeURIComponent(groupId)}/members/me`,
-      schema: VoidSchema,
+      schema: GroupEnvelope,
       signal: opts.signal,
     });
   }

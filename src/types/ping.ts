@@ -12,7 +12,7 @@ export const PingSchema = z.object({
   api: z.literal("ok"),
   accountId: z.string(),
   whatsappConnections: z.array(PingConnectionSchema),
-  message: z.string().optional(),
+  message: z.string().nullish(),
 });
 
 export type Ping = z.infer<typeof PingSchema>;

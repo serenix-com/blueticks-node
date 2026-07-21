@@ -1,15 +1,22 @@
-import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import {
   AudienceSchema,
-  ContactSchema,
   AppendContactsResultSchema,
+  AudienceContactSchema,
+  RemovedAudienceContactSchema,
   type Audience,
-  type Contact,
   type AppendContactsResult,
+  type AudienceContact,
+  type RemovedAudienceContact,
 } from "../types/audiences";
 import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
 export interface ContactInput {
   to: string;
@@ -30,54 +37,72 @@ export interface UpdateContactParams {
   variables?: Record<string, string>;
 }
 
-// Backend may return either an empty body or the deleted resource ref;
-// tolerate both to avoid spurious ValidationError for a successful delete.
-const VoidSchema = z.unknown().optional();
+export interface ListAudiencesParams extends ListParams {
+  order?: "asc" | "desc";
+}
+
 const AudiencePageSchema = pageSchema(AudienceSchema);
+const AudienceEnvelope = dataEnvelope(AudienceSchema);
+const AppendContactsResultEnvelope = dataEnvelope(AppendContactsResultSchema);
+const AudienceContactEnvelope = dataEnvelope(AudienceContactSchema);
+const RemovedAudienceContactEnvelope = dataEnvelope(RemovedAudienceContactSchema);
+const DeletedResourceEnvelope = dataEnvelope(DeletedResourceSchema);
 
 export class AudiencesResource extends BaseResource {
-  /** Create an audience, optionally seeded with contacts. */
+  /**
+   * List audiences.
+   *
+   * List the audiences in your workspace, newest first. Offset-paginated via `limit` + `skip`. Requires `audiences:read`.
+   */
+  async list(
+    params: ListAudiencesParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Audience>> {
+    const { signal, order, ...listParams } = params;
+    const query = buildListQuery(listParams);
+    if (order !== undefined) query.order = order;
+    return this.client.request({
+      method: "GET",
+      path: "/v1/audiences",
+      query,
+      schema: AudiencePageSchema,
+      signal,
+    });
+  }
+
+  /**
+   * Create audience.
+   *
+   * Create a new audience. Returns the audience with `contactCount: 0`. Requires `audiences:write`.
+   */
   async create(body: CreateAudienceParams, opts: { signal?: AbortSignal } = {}): Promise<Audience> {
     return this.client.request({
       method: "POST",
       path: "/v1/audiences",
-      schema: AudienceSchema,
+      schema: AudienceEnvelope,
       body,
       signal: opts.signal,
     });
   }
 
   /**
-   * List audiences, newest first. Cursor-paginated.
+   * Get audience.
+   *
+   * Retrieve a single audience by id, including its `contactCount` and variable schema. Requires `audiences:read`.
    */
-  async list(
-    params: ListParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<Audience>> {
-    const { signal, ...listParams } = params;
+  async get(id: string, opts: { signal?: AbortSignal } = {}): Promise<Audience> {
     return this.client.request({
       method: "GET",
-      path: "/v1/audiences",
-      query: buildListQuery(listParams),
-      schema: AudiencePageSchema,
-      signal,
-    });
-  }
-
-  /** Retrieve an audience, with paginated contacts. */
-  async get(
-    id: string,
-    opts: { page?: number; signal?: AbortSignal } = {},
-  ): Promise<Audience> {
-    return this.client.request({
-      method: "GET",
-      path: `/v1/audiences/${id}`,
-      schema: AudienceSchema,
-      query: opts.page !== undefined ? { page: opts.page } : undefined,
+      path: `/v1/audiences/${encodeURIComponent(id)}`,
+      schema: AudienceEnvelope,
       signal: opts.signal,
     });
   }
 
-  /** Rename an audience. */
+  /**
+   * Update audience.
+   *
+   * Rename an audience or update its variable schema. Requires `audiences:write`.
+   */
   async update(
     id: string,
     body: UpdateAudienceParams,
@@ -85,24 +110,32 @@ export class AudiencesResource extends BaseResource {
   ): Promise<Audience> {
     return this.client.request({
       method: "PATCH",
-      path: `/v1/audiences/${id}`,
-      schema: AudienceSchema,
+      path: `/v1/audiences/${encodeURIComponent(id)}`,
+      schema: AudienceEnvelope,
       body,
       signal: opts.signal,
     });
   }
 
-  /** Delete an audience. Returns `{ id, deleted: true }` on success. */
+  /**
+   * Delete audience.
+   *
+   * Soft-delete an audience. 409 if it's referenced by an active campaign. Returns the deleted ref. Requires `audiences:write`.
+   */
   async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<DeletedResource> {
     return this.client.request({
       method: "DELETE",
-      path: `/v1/audiences/${id}`,
-      schema: DeletedResourceSchema,
+      path: `/v1/audiences/${encodeURIComponent(id)}`,
+      schema: DeletedResourceEnvelope,
       signal: opts.signal,
     });
   }
 
-  /** Append contacts to an audience. */
+  /**
+   * Append contacts to audience.
+   *
+   * Append contacts to an audience. Duplicates (by `to`) are skipped. Requires `audiences:write`.
+   */
   async appendContacts(
     id: string,
     contacts: ContactInput[],
@@ -110,39 +143,47 @@ export class AudiencesResource extends BaseResource {
   ): Promise<AppendContactsResult> {
     return this.client.request({
       method: "POST",
-      path: `/v1/audiences/${id}/contacts`,
-      schema: AppendContactsResultSchema,
+      path: `/v1/audiences/${encodeURIComponent(id)}/contacts`,
+      schema: AppendContactsResultEnvelope,
       body: { contacts },
       signal: opts.signal,
     });
   }
 
-  /** Update a single contact in an audience. */
+  /**
+   * Update audience contact.
+   *
+   * Edit a contact's phone or variables. Requires `audiences:write`.
+   */
   async updateContact(
     audienceId: string,
     contactId: string,
     body: UpdateContactParams,
     opts: { signal?: AbortSignal } = {},
-  ): Promise<Contact> {
+  ): Promise<AudienceContact> {
     return this.client.request({
       method: "PATCH",
-      path: `/v1/audiences/${audienceId}/contacts/${contactId}`,
-      schema: ContactSchema,
+      path: `/v1/audiences/${encodeURIComponent(audienceId)}/contacts/${encodeURIComponent(contactId)}`,
+      schema: AudienceContactEnvelope,
       body,
       signal: opts.signal,
     });
   }
 
-  /** Remove a contact from an audience. */
+  /**
+   * Remove audience contact.
+   *
+   * Remove a contact from an audience. Requires `audiences:write`.
+   */
   async deleteContact(
     audienceId: string,
     contactId: string,
     opts: { signal?: AbortSignal } = {},
-  ): Promise<void> {
-    await this.client.request({
+  ): Promise<RemovedAudienceContact> {
+    return this.client.request({
       method: "DELETE",
-      path: `/v1/audiences/${audienceId}/contacts/${contactId}`,
-      schema: VoidSchema,
+      path: `/v1/audiences/${encodeURIComponent(audienceId)}/contacts/${encodeURIComponent(contactId)}`,
+      schema: RemovedAudienceContactEnvelope,
       signal: opts.signal,
     });
   }

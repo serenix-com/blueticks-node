@@ -1,34 +1,31 @@
 import { z } from "zod";
 
-/**
- * Single newsletter returned by `GET /v1/newsletters/{id}` and
- * `POST /v1/newsletters`. Keyed by `newsletterId` (the newsletter JID).
- */
-export const NewsletterSchema = z.object({
-  newsletterId: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  createdAt: z.string().datetime({ offset: true }).nullable(),
-  subscribers: z.number().int().nullable(),
-  invite: z.string().nullable(),
-  verification: z.enum(["VERIFIED", "UNVERIFIED"]).nullable(),
-});
+export const NewsletterVerificationSchema = z.enum(["VERIFIED", "UNVERIFIED"]);
 
-export type Newsletter = z.infer<typeof NewsletterSchema>;
+export type NewsletterVerification = z.infer<typeof NewsletterVerificationSchema>;
 
-/**
- * A newsletter row in the `GET /v1/newsletters` paged list. Identical to
- * {@link NewsletterSchema} except rows are keyed by `chatId` (matching how
- * every other list endpoint — chats/contacts/groups — keys its rows).
- */
+/** Newsletter row as returned by `GET /v1/newsletters` (keyed by `chatId`). */
 export const NewsletterListItemSchema = z.object({
   chatId: z.string(),
   name: z.string(),
-  description: z.string().nullable(),
-  createdAt: z.string().datetime({ offset: true }).nullable(),
-  subscribers: z.number().int().nullable(),
-  invite: z.string().nullable(),
-  verification: z.enum(["VERIFIED", "UNVERIFIED"]).nullable(),
+  description: z.string().nullish(),
+  createdAt: z.string().datetime({ offset: true }).nullish(),
+  subscribers: z.number().int().nullish(),
+  invite: z.string().nullish(),
+  verification: NewsletterVerificationSchema.nullish(),
 });
 
 export type NewsletterListItem = z.infer<typeof NewsletterListItemSchema>;
+
+/** Newsletter detail as returned by create / get (keyed by `newsletterId`). */
+export const NewsletterSchema = z.object({
+  newsletterId: z.string(),
+  name: z.string(),
+  description: z.string().nullish(),
+  createdAt: z.string().datetime({ offset: true }).nullish(),
+  subscribers: z.number().int().nullish(),
+  invite: z.string().nullish(),
+  verification: NewsletterVerificationSchema.nullish(),
+});
+
+export type Newsletter = z.infer<typeof NewsletterSchema>;

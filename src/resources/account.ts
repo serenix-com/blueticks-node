@@ -1,17 +1,20 @@
 import { BaseResource } from "../base-resource";
 import { AccountSchema, type Account } from "../types/account";
+import { dataEnvelope } from "../types/page";
+
+const AccountEnvelope = dataEnvelope(AccountSchema);
 
 export class AccountResource extends BaseResource {
   /**
-   * Retrieve the authenticated account.
+   * Get account.
    *
-   * Returns the account associated with the API key used for this request.
+   * Retrieve the account the API key belongs to.
    */
   async retrieve(opts: { signal?: AbortSignal } = {}): Promise<Account> {
     return this.client.request({
       method: "GET",
       path: "/v1/account",
-      schema: AccountSchema,
+      schema: AccountEnvelope,
       signal: opts.signal,
     });
   }

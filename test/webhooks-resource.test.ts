@@ -1,81 +1,86 @@
 import { describe, it, expect } from "vitest";
-import { Blueticks } from "../src";
+import { Blueticks, AuthenticationError, ValidationError } from "../src";
 import { mockFetch, jsonResponse } from "./helpers/mock-fetch";
 
 function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
   return new Blueticks({ apiKey: "bt_test_x", baseUrl: "https://example.test", fetch: mockFetch(handler) });
 }
 
-function baseWebhook(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    id: "wh_1",
-    url: "https://example.com/hook",
-    events: ["message.delivered"],
-    description: null,
-    status: "enabled",
-    createdAt: "2026-04-23T10:00:00Z",
-    ...overrides,
-  };
-}
+const WEBHOOK = {
+  id: "wh_1",
+  url: "https://example.test/hook",
+  events: ["message.delivered"],
+  description: "prod hook",
+  status: "enabled",
+  createdAt: "2026-04-22T10:00:00Z",
+};
 
-describe("client.webhooks", () => {
-  it("create returns the webhook", async () => {
+describe("client.webhooks.list", () => {
+  it("returns a camelCase Page<Webhook>", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/webhooks");
+      return jsonResponse(200, { success: true, data: [WEBHOOK], limit: 50, skip: 0, total: 1 });
+    });
+    const page = await c.webhooks.list();
+    expect(page.data[0]!.id).toBe("wh_1");
+    expect(page.data[0]!.createdAt).toBe("2026-04-22T10:00:00Z");
+  });
+
+  it("raises ValidationError on malformed envelope", async () => {
+    const c = mkClient(() => jsonResponse(200, {}));
+    await expect(c.webhooks.list()).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe("client.webhooks.create", () => {
+  it("posts and returns the webhook", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ url: "https://example.com/hook", events: ["message.delivered"] });
-      return jsonResponse(200, baseWebhook());
+      const body = await req.json();
+      expect(body).toEqual({ url: "https://example.test/hook", events: ["message.delivered"] });
+      return jsonResponse(201, { success: true, data: WEBHOOK });
     });
-    const wh = await c.webhooks.create({ url: "https://example.com/hook", events: ["message.delivered"] });
-    expect(wh.id).toBe("wh_1");
+    const res = await c.webhooks.create({ url: "https://example.test/hook", events: ["message.delivered"] });
+    expect(res.id).toBe("wh_1");
+    expect(res.status).toBe("enabled");
   });
 
-  it("list returns paginated Page<Webhook>", async () => {
+  it("propagates AuthenticationError on 401", async () => {
+    const c = mkClient(() =>
+      jsonResponse(401, { error: { code: "authentication_required", message: "no", requestId: "req_w" } }),
+    );
+    const err = await c.webhooks.create({ url: "x", events: ["message.read"] }).catch((e) => e);
+    expect(err).toBeInstanceOf(AuthenticationError);
+    expect(err.requestId).toBe("req_w");
+  });
+});
+
+describe("client.webhooks.get/update/delete", () => {
+  it("get returns a webhook", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks");
-      return jsonResponse(200, {
-        data: [baseWebhook(), baseWebhook({ id: "wh_2" })],
-        has_more: false,
-        next_cursor: null,
-      });
+      expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_1");
+      return jsonResponse(200, { success: true, data: WEBHOOK });
     });
-    const result = await c.webhooks.list();
-    expect(result.data).toHaveLength(2);
-    expect(result.data[0]!.id).toBe("wh_1");
-    expect(result.has_more).toBe(false);
+    expect((await c.webhooks.get("wh_1")).id).toBe("wh_1");
   });
 
-  it("get by id", async () => {
-    const c = mkClient((req) => {
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_42");
-      return jsonResponse(200, baseWebhook({ id: "wh_42" }));
-    });
-    const wh = await c.webhooks.get("wh_42");
-    expect(wh.id).toBe("wh_42");
-  });
-
-  it("update PATCHes", async () => {
+  it("update patches status", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("PATCH");
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_1");
-      const body = (await req.json()) as Record<string, unknown>;
+      const body = await req.json();
       expect(body).toEqual({ status: "disabled" });
-      return jsonResponse(200, baseWebhook({ status: "disabled" }));
+      return jsonResponse(200, { success: true, data: { ...WEBHOOK, status: "disabled" } });
     });
-    const wh = await c.webhooks.update("wh_1", { status: "disabled" });
-    expect(wh.status).toBe("disabled");
+    const res = await c.webhooks.update("wh_1", { status: "disabled" });
+    expect(res.status).toBe("disabled");
   });
 
-  it("delete returns typed { id, deleted: true } envelope", async () => {
+  it("delete returns { id, deleted: true }", async () => {
     const c = mkClient((req) => {
       expect(req.method).toBe("DELETE");
-      expect(new URL(req.url).pathname).toBe("/v1/webhooks/wh_1");
-      return jsonResponse(200, { id: "wh_1", deleted: true });
+      return jsonResponse(200, { success: true, data: { id: "wh_1", deleted: true } });
     });
-    const result = await c.webhooks.delete("wh_1");
-    expect(result.id).toBe("wh_1");
-    expect(result.deleted).toBe(true);
+    const res = await c.webhooks.delete("wh_1");
+    expect(res.deleted).toBe(true);
   });
 });

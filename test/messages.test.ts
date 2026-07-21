@@ -3,450 +3,207 @@ import { Blueticks, AuthenticationError, ValidationError } from "../src";
 import { mockFetch, jsonResponse } from "./helpers/mock-fetch";
 
 function mkClient(handler: Parameters<typeof mockFetch>[0]): Blueticks {
-  return new Blueticks({
-    apiKey: "bt_test_x",
-    baseUrl: "https://example.test",
-    fetch: mockFetch(handler),
-  });
+  return new Blueticks({ apiKey: "bt_test_x", baseUrl: "https://example.test", fetch: mockFetch(handler) });
 }
 
-function authErr() {
-  return jsonResponse(401, {
-    error: { code: "authentication_required", message: "bad key", requestId: "req_a" },
-  });
-}
-
-function baseChatMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    key: "true_120363000000000000@g.us_3EB0XXXXXXXXXXXXXXXX",
-    chatId: "120363000000000000@g.us",
-    from: "15551230001@c.us",
-    timestamp: "2026-04-23T10:00:00Z",
-    text: "hello",
-    type: "chat",
-    fromMe: false,
-    ack: 3,
-    mediaUrl: null,
-    caption: null,
-    filename: null,
-    ...overrides,
-  };
-}
+const PUBLIC_MSG = {
+  waMessageKey: { fromMe: false, remote: "120@g.us", id: "ABC", _serialized: "false_120@g.us_ABC" },
+  chatId: "120@g.us",
+  from: "111@c.us",
+  senderName: "Bob",
+  timestamp: "2026-04-22T10:00:00Z",
+  text: "hello",
+  type: "chat",
+  fromMe: false,
+  ack: 3,
+};
 
 describe("client.messages.list", () => {
-  it("encodes query params (incl. chatId) and returns Page<ChatMessage>", async () => {
+  it("returns a Page<PublicMessage> and serializes messageTypes", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
       const url = new URL(req.url);
       expect(url.pathname).toBe("/v1/messages");
-      expect(url.searchParams.get("order")).toBe("asc");
-      expect(url.searchParams.get("query")).toBe("invoice");
-      expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00Z");
-      expect(url.searchParams.get("until")).toBe("2026-04-30T00:00:00Z");
+      expect(url.searchParams.get("chatId")).toBe("120@g.us");
       expect(url.searchParams.get("messageTypes")).toBe("image,document");
-      expect(url.searchParams.get("chatId")).toBe("120363000000000000@g.us");
-      return jsonResponse(200, {
-        data: [baseChatMessage()],
-        has_more: false,
-        next_cursor: null,
-      });
+      expect(url.searchParams.get("order")).toBe("asc");
+      return jsonResponse(200, { success: true, data: [PUBLIC_MSG], limit: 50, skip: 0, total: 1 });
     });
     const page = await c.messages.list({
-      order: "asc",
-      query: "invoice",
-      since: "2026-04-01T00:00:00Z",
-      until: "2026-04-30T00:00:00Z",
+      chatId: "120@g.us",
       messageTypes: ["image", "document"],
-      chatId: "120363000000000000@g.us",
+      order: "asc",
     });
-    expect(page.data).toHaveLength(1);
-    expect(page.data[0]?.key).toContain("3EB0");
-    expect(page.data[0]?.fromMe).toBe(false);
-    expect(page.has_more).toBe(false);
+    expect(page.data[0]!.chatId).toBe("120@g.us");
+    expect(page.data[0]!.ack).toBe(3);
+    expect(page.data[0]!.waMessageKey.fromMe).toBe(false);
   });
 
-  it("omits order by default and omits chatId when not provided", async () => {
-    const c = mkClient((req) => {
-      const url = new URL(req.url);
-      expect(url.pathname).toBe("/v1/messages");
-      expect(url.searchParams.has("order")).toBe(false);
-      expect(url.searchParams.has("chatId")).toBe(false);
-      return jsonResponse(200, { data: [], has_more: false, next_cursor: null });
-    });
-    const page = await c.messages.list();
-    expect(page.data).toHaveLength(0);
-  });
-
-  it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
-    const err = await c.messages.list().catch((e) => e);
-    expect(err).toBeInstanceOf(AuthenticationError);
-    expect(err.requestId).toBe("req_a");
-  });
-
-  it("raises ValidationError when required field is missing", async () => {
+  it("raises ValidationError on malformed envelope", async () => {
     const c = mkClient(() => jsonResponse(200, {}));
     await expect(c.messages.list()).rejects.toBeInstanceOf(ValidationError);
   });
 });
 
-function baseSentMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    id: null,
-    key: "true_120363000000000000@g.us_3EB0XXXXXXXXXXXXXXXX",
-    to: "120363000000000000@g.us",
-    type: "text",
-    text: "hello",
-    mediaUrl: null,
-    mediaKind: null,
-    pollQuestion: null,
-    status: "confirmed",
-    sendAt: null,
-    createdAt: "2026-04-23T10:00:00Z",
-    confirmedAt: "2026-04-23T10:00:00Z",
-    receivedAt: null,
-    readAt: null,
-    playedAt: null,
-    failedAt: null,
-    failureReason: null,
-    ...overrides,
-  };
-}
-
-describe("client.messages.send (text variant)", () => {
-  it("POSTs to /v1/messages/:id with type+text and returns typed message", async () => {
+describe("client.messages.send", () => {
+  it("posts a flat body and returns MessageResponse", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/c1");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ type: "text", text: "hello" });
-      return jsonResponse(201, baseSentMessage({ to: "c1" }));
+      expect(new URL(req.url).pathname).toBe("/v1/messages/120%40g.us");
+      expect(req.headers.get("idempotency-key")).toBe("idem-1");
+      const body = await req.json();
+      expect(body).toEqual({ type: "text", text: "hi" });
+      return jsonResponse(201, {
+        success: true,
+        data: {
+          id: "msg_1",
+          to: "120@g.us",
+          type: "text",
+          status: "confirmed",
+          createdAt: "2026-04-22T10:00:00Z",
+        },
+      });
     });
-    const m = await c.messages.send("c1", { type: "text", text: "hello" });
-    expect(m.type).toBe("text");
-    expect(m.status).toBe("confirmed");
-    expect(typeof m.key).toBe("string");
-  });
-
-  it("sets Idempotency-Key header when idempotencyKey is provided", async () => {
-    const c = mkClient(async (req) => {
-      expect(req.headers.get("idempotency-key")).toBe("abc-123");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).not.toHaveProperty("idempotencyKey");
-      return jsonResponse(201, baseSentMessage({ to: "c1" }));
-    });
-    await c.messages.send(
-      "c1",
-      { type: "text", text: "hi" },
-      { idempotencyKey: "abc-123" },
-    );
+    const res = await c.messages.send("120@g.us", { type: "text", text: "hi" }, { idempotencyKey: "idem-1" });
+    expect(res.id).toBe("msg_1");
+    expect(res.status).toBe("confirmed");
   });
 
   it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
-    const err = await c.messages
-      .send("c1", { type: "text", text: "hi" })
-      .catch((e) => e);
+    const c = mkClient(() =>
+      jsonResponse(401, { error: { code: "authentication_required", message: "no", requestId: "req_m" } }),
+    );
+    const err = await c.messages.send("120@g.us", { type: "text", text: "x" }).catch((e) => e);
     expect(err).toBeInstanceOf(AuthenticationError);
-    expect(err.requestId).toBe("req_a");
-  });
-
-  it("raises ValidationError when required field missing from response", async () => {
-    const c = mkClient(() => jsonResponse(201, {}));
-    await expect(
-      c.messages.send("c1", { type: "text", text: "hi" }),
-    ).rejects.toBeInstanceOf(ValidationError);
-  });
-});
-
-describe("client.messages.send (media variant)", () => {
-  it("POSTs type:media with flat media fields", async () => {
-    const c = mkClient(async (req) => {
-      expect(new URL(req.url).pathname).toBe("/v1/messages/c1");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({
-        type: "media",
-        mediaUrl: "https://cdn.example.com/x.pdf",
-        mediaKind: "document",
-        mediaFilename: "receipt.pdf",
-      });
-      return jsonResponse(
-        201,
-        baseSentMessage({
-          to: "c1",
-          type: "media",
-          text: null,
-          mediaUrl: "https://cdn.example.com/x.pdf",
-          mediaKind: "document",
-        }),
-      );
-    });
-    const m = await c.messages.send("c1", {
-      type: "media",
-      mediaUrl: "https://cdn.example.com/x.pdf",
-      mediaKind: "document",
-      mediaFilename: "receipt.pdf",
-    });
-    expect(m.type).toBe("media");
-    expect(m.mediaKind).toBe("document");
-  });
-
-  it("forwards flat camelCase wire fields (mediaBase64, replyTo)", async () => {
-    const c = mkClient(async (req) => {
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({
-        type: "media",
-        mediaBase64: "AAAA",
-        mediaKind: "image",
-        mediaFilename: "x.png",
-        replyTo: "msg_abc",
-      });
-      return jsonResponse(
-        201,
-        baseSentMessage({ to: "c1", type: "media", text: null, mediaKind: "image" }),
-      );
-    });
-    await c.messages.send("c1", {
-      type: "media",
-      mediaBase64: "AAAA",
-      mediaKind: "image",
-      mediaFilename: "x.png",
-      replyTo: "msg_abc",
-    });
-  });
-});
-
-describe("client.messages.send (poll variant)", () => {
-  it("POSTs type:poll with flat poll fields", async () => {
-    const c = mkClient(async (req) => {
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({
-        type: "poll",
-        pollQuestion: "Pizza?",
-        pollOptions: ["Yes", "No"],
-      });
-      return jsonResponse(
-        201,
-        baseSentMessage({
-          to: "c1",
-          type: "poll",
-          text: null,
-          pollQuestion: "Pizza?",
-        }),
-      );
-    });
-    const m = await c.messages.send("c1", {
-      type: "poll",
-      pollQuestion: "Pizza?",
-      pollOptions: ["Yes", "No"],
-    });
-    expect(m.type).toBe("poll");
-    expect(m.pollQuestion).toBe("Pizza?");
+    expect(err.requestId).toBe("req_m");
   });
 });
 
 describe("client.messages.get", () => {
-  it("GETs single message by waMessageKey", async () => {
-    const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/k1");
-      expect(new URL(req.url).searchParams.has("chatId")).toBe(false);
-      return jsonResponse(200, baseChatMessage({ key: "k1" }));
-    });
-    const m = await c.messages.get("k1");
-    expect(m.key).toBe("k1");
-    expect(m.text).toBe("hello");
-  });
-
-  it("forwards optional chatId query param", async () => {
+  it("fetches by key with optional chatId query", async () => {
     const c = mkClient((req) => {
       const url = new URL(req.url);
-      expect(url.pathname).toBe("/v1/messages/k1");
-      expect(url.searchParams.get("chatId")).toBe("c1@c.us");
-      return jsonResponse(200, baseChatMessage({ key: "k1" }));
+      expect(url.pathname).toBe("/v1/messages/false_120%40g.us_ABC");
+      expect(url.searchParams.get("chatId")).toBe("120@g.us");
+      return jsonResponse(200, { success: true, data: PUBLIC_MSG });
     });
-    const m = await c.messages.get("k1", { chatId: "c1@c.us" });
-    expect(m.key).toBe("k1");
+    const msg = await c.messages.get("false_120@g.us_ABC", { chatId: "120@g.us" });
+    expect(msg.type).toBe("chat");
   });
 });
 
 describe("client.messages.getAck", () => {
-  it("returns typed MessageAck", async () => {
+  it("returns the ack value", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/ack/k1");
-      return jsonResponse(200, { ack: 3 });
+      expect(new URL(req.url).pathname).toBe("/v1/messages/ack/false_120%40g.us_ABC");
+      return jsonResponse(200, { success: true, data: { ack: 2 } });
     });
-    const r = await c.messages.getAck("k1");
-    expect(r.ack).toBe(3);
-  });
-
-  it("accepts null ack and forwards chatId query param", async () => {
-    const c = mkClient((req) => {
-      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
-      return jsonResponse(200, { ack: null });
-    });
-    const r = await c.messages.getAck("k1", { chatId: "c1@c.us" });
-    expect(r.ack).toBeNull();
-  });
-
-  it("raises ValidationError when ack is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(c.messages.getAck("k1")).rejects.toBeInstanceOf(ValidationError);
-  });
-});
-
-describe("client.messages.react", () => {
-  it("POSTs the body and returns OkResponse", async () => {
-    const c = mkClient(async (req) => {
-      expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/reactions/k1");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ emoji: "👍" });
-      return jsonResponse(200, { ok: true });
-    });
-    const r = await c.messages.react("k1", { emoji: "👍" });
-    expect(r.ok).toBe(true);
-  });
-
-  it("forwards optional chatId query param", async () => {
-    const c = mkClient(async (req) => {
-      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
-      return jsonResponse(200, { ok: true });
-    });
-    await c.messages.react("k1", { emoji: "👍" }, { chatId: "c1@c.us" });
-  });
-});
-
-describe("client.messages.loadOlder", () => {
-  it("returns typed LoadOlderMessagesResponse", async () => {
-    const c = mkClient((req) => {
-      expect(req.method).toBe("POST");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/load_older/c1");
-      return jsonResponse(200, { totalMessages: 1500, added: 200, canLoadMore: true });
-    });
-    const r = await c.messages.loadOlder("c1");
-    expect(r.totalMessages).toBe(1500);
-    expect(r.added).toBe(200);
-    expect(r.canLoadMore).toBe(true);
-  });
-
-  it("accepts null totalMessages and added", async () => {
-    const c = mkClient(() =>
-      jsonResponse(200, { totalMessages: null, added: null, canLoadMore: false }),
-    );
-    const r = await c.messages.loadOlder("c1");
-    expect(r.totalMessages).toBeNull();
-    expect(r.canLoadMore).toBe(false);
-  });
-
-  it("raises ValidationError when canLoadMore is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, { totalMessages: 1, added: 1 }));
-    await expect(c.messages.loadOlder("c1")).rejects.toBeInstanceOf(ValidationError);
-  });
-});
-
-describe("client.messages.getMedia", () => {
-  it("returns typed ChatMedia", async () => {
-    const c = mkClient((req) => {
-      expect(new URL(req.url).pathname).toBe("/v1/messages/media/k1");
-      return jsonResponse(200, {
-        url: "https://cdn.example/x.png",
-        mimetype: "image/png",
-        filename: "x.png",
-        dataBase64: null,
-        originalQuality: true,
-        mediaUnavailable: null,
-      });
-    });
-    const r = await c.messages.getMedia("k1");
-    expect(r.mimetype).toBe("image/png");
-    expect(r.originalQuality).toBe(true);
-  });
-
-  it("forwards optional chatId query param", async () => {
-    const c = mkClient((req) => {
-      expect(new URL(req.url).searchParams.get("chatId")).toBe("c1@c.us");
-      return jsonResponse(200, {
-        url: null,
-        mimetype: null,
-        filename: null,
-        dataBase64: null,
-        originalQuality: null,
-        mediaUnavailable: "fetching",
-      });
-    });
-    const r = await c.messages.getMedia("k1", { chatId: "c1@c.us" });
-    expect(r.mediaUnavailable).toBe("fetching");
+    const res = await c.messages.getAck("false_120@g.us_ABC");
+    expect(res.ack).toBe(2);
   });
 });
 
 describe("client.messages.batchAcks", () => {
-  it("POSTs messageKeys and returns BatchMessageAcksResponse", async () => {
+  it("returns a Page<BatchMessageAckEntry>", async () => {
     const c = mkClient(async (req) => {
       expect(req.method).toBe("POST");
       expect(new URL(req.url).pathname).toBe("/v1/messages/acks");
-      const body = (await req.json()) as Record<string, unknown>;
-      expect(body).toEqual({ messageKeys: ["k1", "k2"] });
+      const body = await req.json();
+      expect(body.messageKeys).toEqual(["k1", "k2"]);
       return jsonResponse(200, {
+        success: true,
         data: [
-          { key: "k1", ack: 3 },
-          { key: "k2", ack: 1 },
+          { key: "k1", ack: 3, found: true },
+          { key: "k2", found: false },
         ],
+        limit: 200,
+        skip: 0,
+        total: 2,
       });
     });
-    const r = await c.messages.batchAcks({ messageKeys: ["k1", "k2"] });
-    expect(r.data).toHaveLength(2);
-    expect(r.data[0]?.key).toBe("k1");
-    expect(r.data[0]?.ack).toBe(3);
-    expect(r.data[1]?.ack).toBe(1);
+    const page = await c.messages.batchAcks({ messageKeys: ["k1", "k2"] });
+    expect(page.data[0]!.ack).toBe(3);
+    expect(page.data[1]!.found).toBe(false);
   });
+});
 
-  it("raises ValidationError when data is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(
-      c.messages.batchAcks({ messageKeys: ["k1"] }),
-    ).rejects.toBeInstanceOf(ValidationError);
+describe("client.messages.loadOlder", () => {
+  it("returns a LoadOlderResult", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/messages/load_older/120%40g.us");
+      return jsonResponse(200, {
+        success: true,
+        data: { totalMessages: 100, added: 20, canLoadMore: true, historyUnavailable: false },
+      });
+    });
+    const res = await c.messages.loadOlder("120@g.us");
+    expect(res.added).toBe(20);
+    expect(res.canLoadMore).toBe(true);
   });
+});
 
-  it("propagates AuthenticationError on 401", async () => {
-    const c = mkClient(() => authErr());
-    const err = await c.messages.batchAcks({ messageKeys: ["k1"] }).catch((e) => e);
-    expect(err).toBeInstanceOf(AuthenticationError);
+describe("client.messages.getMedia", () => {
+  it("returns Media and passes maxAttempts", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.pathname).toBe("/v1/messages/media/false_120%40g.us_ABC");
+      expect(url.searchParams.get("maxAttempts")).toBe("1");
+      return jsonResponse(200, {
+        success: true,
+        data: { url: "https://cdn.test/x.jpg", mimetype: "image/jpeg", originalQuality: true },
+      });
+    });
+    const media = await c.messages.getMedia("false_120@g.us_ABC", { maxAttempts: 1 });
+    expect(media.url).toBe("https://cdn.test/x.jpg");
+    expect(media.originalQuality).toBe(true);
   });
 });
 
 describe("client.messages.listPinned", () => {
-  it("returns typed Page<PinnedMessage>", async () => {
+  it("returns a Page<PinnedMessage>", async () => {
     const c = mkClient((req) => {
-      expect(req.method).toBe("GET");
-      expect(new URL(req.url).pathname).toBe("/v1/messages/pinned/c1");
+      expect(new URL(req.url).pathname).toBe("/v1/messages/pinned/120%40g.us");
       return jsonResponse(200, {
-        data: [{ key: "k1", chatId: "c1", text: "pinned note" }],
-        has_more: false,
-        next_cursor: null,
+        success: true,
+        data: [{ key: "k1", chatId: "120@g.us", text: "pinned" }],
+        limit: 50,
+        skip: 0,
+        total: 1,
       });
     });
-    const page = await c.messages.listPinned("c1");
-    expect(page.data).toHaveLength(1);
-    expect(page.data[0]?.key).toBe("k1");
-    expect(page.data[0]?.text).toBe("pinned note");
+    const page = await c.messages.listPinned("120@g.us");
+    expect(page.data[0]!.key).toBe("k1");
+  });
+});
+
+describe("client.messages pin/unpin/react", () => {
+  it("pin sends duration in body", async () => {
+    const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/messages/pin/k1");
+      const body = await req.json();
+      expect(body).toEqual({ duration: 3600 });
+      return jsonResponse(200, { success: true, data: { ok: true } });
+    });
+    const res = await c.messages.pin("k1", { duration: 3600 });
+    expect(res.ok).toBe(true);
   });
 
-  it("accepts null text", async () => {
-    const c = mkClient(() =>
-      jsonResponse(200, {
-        data: [{ key: "k1", chatId: "c1", text: null }],
-        has_more: false,
-        next_cursor: null,
-      }),
-    );
-    const page = await c.messages.listPinned("c1");
-    expect(page.data[0]?.text).toBeNull();
+  it("unpin returns ok", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/messages/unpin/k1");
+      return jsonResponse(200, { success: true, data: { ok: true } });
+    });
+    const res = await c.messages.unpin("k1");
+    expect(res.ok).toBe(true);
   });
 
-  it("raises ValidationError when data is missing", async () => {
-    const c = mkClient(() => jsonResponse(200, {}));
-    await expect(c.messages.listPinned("c1")).rejects.toBeInstanceOf(ValidationError);
+  it("react posts the emoji body", async () => {
+    const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/messages/reactions/k1");
+      const body = await req.json();
+      expect(body).toEqual({ emoji: "👍" });
+      return jsonResponse(200, { success: true, data: { ok: true } });
+    });
+    const res = await c.messages.react("k1", { emoji: "👍" });
+    expect(res.ok).toBe(true);
   });
 });

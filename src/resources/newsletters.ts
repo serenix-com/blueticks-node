@@ -5,30 +5,45 @@ import {
   type Newsletter,
   type NewsletterListItem,
 } from "../types/newsletters";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
-const NewsletterPageSchema = pageSchema(NewsletterListItemSchema);
+export interface ListNewslettersParams extends ListParams {
+  searchToken?: string;
+  includeArchive?: boolean;
+}
 
 export interface CreateNewsletterParams {
   name: string;
   description?: string;
 }
 
+const NewsletterListItemPageSchema = pageSchema(NewsletterListItemSchema);
+const NewsletterEnvelope = dataEnvelope(NewsletterSchema);
+
 export class NewslettersResource extends BaseResource {
   /**
    * List newsletters.
    *
-   * List newsletters visible to the connected WhatsApp engine. Cursor-paginated via `limit` + `cursor`. Requires `newsletters:read` scope.
+   * List newsletters visible to the connected WhatsApp engine. Offset-paginated via `limit` + `skip`. Requires `newsletters:read` scope.
    */
   async list(
-    params: ListParams & { signal?: AbortSignal } = {},
+    params: ListNewslettersParams & { signal?: AbortSignal } = {},
   ): Promise<Page<NewsletterListItem>> {
-    const { signal, ...listParams } = params;
+    const { signal, searchToken, includeArchive, ...listParams } = params;
+    const query = buildListQuery(listParams);
+    if (searchToken !== undefined) query.searchToken = searchToken;
+    if (includeArchive !== undefined) query.includeArchive = includeArchive;
     return this.client.request({
       method: "GET",
       path: "/v1/newsletters",
-      query: buildListQuery(listParams),
-      schema: NewsletterPageSchema,
+      query,
+      schema: NewsletterListItemPageSchema,
       signal,
     });
   }
@@ -46,7 +61,7 @@ export class NewslettersResource extends BaseResource {
       method: "POST",
       path: "/v1/newsletters",
       body,
-      schema: NewsletterSchema,
+      schema: NewsletterEnvelope,
       signal: opts.signal,
     });
   }
@@ -59,8 +74,8 @@ export class NewslettersResource extends BaseResource {
   async retrieve(id: string, opts: { signal?: AbortSignal } = {}): Promise<Newsletter> {
     return this.client.request({
       method: "GET",
-      path: `/v1/newsletters/${id}`,
-      schema: NewsletterSchema,
+      path: `/v1/newsletters/${encodeURIComponent(id)}`,
+      schema: NewsletterEnvelope,
       signal: opts.signal,
     });
   }

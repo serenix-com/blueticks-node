@@ -1,7 +1,13 @@
 import { BaseResource } from "../base-resource";
 import { WebhookSchema, type Webhook } from "../types/webhooks";
 import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
-import { pageSchema, buildListQuery, type Page, type ListParams } from "../types/page";
+import {
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "../types/page";
 
 export interface CreateWebhookParams {
   url: string;
@@ -12,58 +18,73 @@ export interface CreateWebhookParams {
 export interface UpdateWebhookParams {
   url?: string;
   events?: string[];
-  description?: string;
+  description?: string | null;
   status?: "enabled" | "disabled";
 }
 
+export interface ListWebhooksParams extends ListParams {
+  order?: "asc" | "desc";
+}
+
 const WebhookPageSchema = pageSchema(WebhookSchema);
+const WebhookEnvelope = dataEnvelope(WebhookSchema);
+const DeletedResourceEnvelope = dataEnvelope(DeletedResourceSchema);
 
 export class WebhooksResource extends BaseResource {
-  /** Register a new webhook endpoint. */
+  /**
+   * List webhooks.
+   *
+   * List webhooks in the workspace.
+   */
+  async list(
+    params: ListWebhooksParams & { signal?: AbortSignal } = {},
+  ): Promise<Page<Webhook>> {
+    const { signal, order, ...listParams } = params;
+    const query = buildListQuery(listParams);
+    if (order !== undefined) query.order = order;
+    return this.client.request({
+      method: "GET",
+      path: "/v1/webhooks",
+      query,
+      schema: WebhookPageSchema,
+      signal,
+    });
+  }
+
+  /**
+   * Create webhook.
+   *
+   * Register a new webhook.
+   */
   async create(body: CreateWebhookParams, opts: { signal?: AbortSignal } = {}): Promise<Webhook> {
     return this.client.request({
       method: "POST",
       path: "/v1/webhooks",
-      schema: WebhookSchema,
+      schema: WebhookEnvelope,
       body,
       signal: opts.signal,
     });
   }
 
   /**
-   * List webhooks, newest first. Cursor-paginated.
+   * Get webhook.
    *
-   * @example
-   *   const page = await bt.webhooks.list({ limit: 100 });
-   *   for (const wh of page.data) { ... }
-   *   if (page.has_more) {
-   *     const next = await bt.webhooks.list({ cursor: page.next_cursor });
-   *   }
+   * Get a webhook by id.
    */
-  async list(
-    params: ListParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<Webhook>> {
-    const { signal, ...listParams } = params;
-    return this.client.request({
-      method: "GET",
-      path: "/v1/webhooks",
-      query: buildListQuery(listParams),
-      schema: WebhookPageSchema,
-      signal,
-    });
-  }
-
-  /** Retrieve a webhook by id. */
   async get(id: string, opts: { signal?: AbortSignal } = {}): Promise<Webhook> {
     return this.client.request({
       method: "GET",
-      path: `/v1/webhooks/${id}`,
-      schema: WebhookSchema,
+      path: `/v1/webhooks/${encodeURIComponent(id)}`,
+      schema: WebhookEnvelope,
       signal: opts.signal,
     });
   }
 
-  /** Update a webhook (URL, events, description, status). */
+  /**
+   * Update webhook.
+   *
+   * Update a webhook.
+   */
   async update(
     id: string,
     body: UpdateWebhookParams,
@@ -71,19 +92,23 @@ export class WebhooksResource extends BaseResource {
   ): Promise<Webhook> {
     return this.client.request({
       method: "PATCH",
-      path: `/v1/webhooks/${id}`,
-      schema: WebhookSchema,
+      path: `/v1/webhooks/${encodeURIComponent(id)}`,
+      schema: WebhookEnvelope,
       body,
       signal: opts.signal,
     });
   }
 
-  /** Delete a webhook by id. Returns `{ id, deleted: true }` on success. */
+  /**
+   * Delete webhook.
+   *
+   * Delete a webhook.
+   */
   async delete(id: string, opts: { signal?: AbortSignal } = {}): Promise<DeletedResource> {
     return this.client.request({
       method: "DELETE",
-      path: `/v1/webhooks/${id}`,
-      schema: DeletedResourceSchema,
+      path: `/v1/webhooks/${encodeURIComponent(id)}`,
+      schema: DeletedResourceEnvelope,
       signal: opts.signal,
     });
   }

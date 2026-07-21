@@ -1,11 +1,13 @@
 export { AccountSchema, type Account } from "./account";
 export {
   AudienceSchema,
-  ContactSchema,
   AppendContactsResultSchema,
+  AudienceContactSchema,
+  RemovedAudienceContactSchema,
   type Audience,
-  type Contact,
   type AppendContactsResult,
+  type AudienceContact,
+  type RemovedAudienceContact,
 } from "./audiences";
 export {
   CampaignSchema,
@@ -15,63 +17,87 @@ export {
 } from "./campaigns";
 export {
   ChatSchema,
-  ChatMessageSchema,
-  ChatMediaSchema,
-  PinnedMessageSchema,
+  ChatTypeSchema,
   ParticipantSchema,
-  ParticipantListSchema,
-  MessageTypeSchema,
-  MediaUnavailableReasonSchema,
-  OkResponseSchema,
-  ChatRefSchema,
-  MessageAckSchema,
-  LoadOlderMessagesResponseSchema,
-  BatchMessageAckEntrySchema,
-  BatchMessageAcksResponseSchema,
+  ChatMutationResultSchema,
   type Chat,
-  type ChatMessage,
-  type ChatMedia,
-  type PinnedMessage,
+  type ChatType,
   type Participant,
-  type ParticipantList,
-  type MessageType,
-  type MediaUnavailableReason,
-  type OkResponse,
-  type ChatRef,
-  type MessageAck,
-  type LoadOlderMessagesResponse,
-  type BatchMessageAckEntry,
-  type BatchMessageAcksResponse,
-  type SendInChatRequest,
+  type ChatMutationResult,
 } from "./chats";
 export { WhatsAppContactSchema, type WhatsAppContact } from "./contacts";
 export { DeletedResourceSchema, type DeletedResource } from "./deleted";
-export { EngineStatusSchema, type EngineStatus } from "./engines";
-export { GroupSchema, GroupParticipantSchema, type Group, type GroupParticipant } from "./groups";
+export { EngineSchema, type Engine } from "./engines";
+export {
+  GroupSchema,
+  GroupListItemSchema,
+  GroupParticipantSchema,
+  type Group,
+  type GroupListItem,
+  type GroupParticipant,
+} from "./groups";
+export {
+  OkResultSchema,
+  MessageTypeSchema,
+  PublicMessageSchema,
+  PublicQuotedMessageSchema,
+  MessageAckSchema,
+  BatchMessageAckEntrySchema,
+  MediaSchema,
+  MediaUnavailableReasonSchema,
+  LoadOlderResultSchema,
+  PinnedMessageSchema,
+  type OkResult,
+  type MessageType,
+  type PublicMessage,
+  type PublicQuotedMessage,
+  type MessageAck,
+  type BatchMessageAckEntry,
+  type Media,
+  type MediaUnavailableReason,
+  type LoadOlderResult,
+  type PinnedMessage,
+} from "./messages";
 export {
   NewsletterSchema,
   NewsletterListItemSchema,
+  NewsletterVerificationSchema,
   type Newsletter,
   type NewsletterListItem,
+  type NewsletterVerification,
 } from "./newsletters";
-export { pageSchema, buildListQuery, type Page, type ListParams } from "./page";
-export { PingSchema, type Ping } from "./ping";
 export {
-  ScheduledMessageSchema,
-  ScheduledMessageStatusSchema,
-  type ScheduledMessage,
-  type ScheduledMessageStatus,
+  pageSchema,
+  dataEnvelope,
+  buildListQuery,
+  type Page,
+  type ListParams,
+} from "./page";
+export { PingSchema, PingConnectionSchema, type Ping, type PingConnection } from "./ping";
+export {
+  MessageResponseSchema,
+  WaMessageKeySchema,
+  LinkPreviewSchema,
+  MessageKindSchema,
+  MediaKindSchema,
+  MessageStatusSchema,
+  type MessageResponse,
+  type WaMessageKey,
+  type LinkPreview,
+  type MessageKind,
+  type MediaKind,
+  type MessageStatus,
 } from "./scheduled-messages";
 export {
-  SunoClipSchema,
-  SunoClipStatusSchema,
-  SunoGenerationSchema,
-  SunoUploadSchema,
+  SongClipSchema,
+  SongClipStatusSchema,
+  GenerateSongResponseSchema,
+  CreateUploadResponseSchema,
   SunoAccountSchema,
-  type SunoClip,
-  type SunoClipStatus,
-  type SunoGeneration,
-  type SunoUpload,
+  type SongClip,
+  type SongClipStatus,
+  type GenerateSongResponse,
+  type CreateUploadResponse,
   type SunoAccount,
 } from "./suno";
 export {
