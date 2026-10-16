@@ -126,6 +126,24 @@ describe("client.messages.batchAcks", () => {
   });
 });
 
+describe("client.messages.batchAcks (bare-array envelope)", () => {
+  it("accepts { success, data: [...] } with no limit/skip/total", async () => {
+    const c = mkClient(() =>
+      jsonResponse(200, {
+        success: true,
+        data: [
+          { key: "k1", ack: 3, found: true },
+          { key: "k2", found: false },
+        ],
+      }),
+    );
+    const page = await c.messages.batchAcks({ messageKeys: ["k1", "k2"] });
+    expect(page.data).toHaveLength(2);
+    expect(page.data[0]!.ack).toBe(3);
+    expect(page).toMatchObject({ limit: 2, skip: 0, total: 2 });
+  });
+});
+
 describe("client.messages.loadOlder", () => {
   it("returns a LoadOlderResult", async () => {
     const c = mkClient((req) => {
@@ -172,6 +190,17 @@ describe("client.messages.listPinned", () => {
     });
     const page = await c.messages.listPinned("120@g.us");
     expect(page.data[0]!.key).toBe("k1");
+  });
+});
+
+describe("client.messages.listPinned (bare-array envelope)", () => {
+  it("accepts { success, data: [...] } with no limit/skip/total", async () => {
+    const c = mkClient(() =>
+      jsonResponse(200, { success: true, data: [{ key: "k1", chatId: "120@g.us", text: "pinned" }] }),
+    );
+    const page = await c.messages.listPinned("120@g.us");
+    expect(page.data[0]!.key).toBe("k1");
+    expect(page).toMatchObject({ limit: 1, skip: 0, total: 1 });
   });
 });
 
