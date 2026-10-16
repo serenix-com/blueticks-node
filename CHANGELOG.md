@@ -3,6 +3,17 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [4.0.1] — 2026-10-16
+
+### Fixed
+
+- `messages.batchAcks()` and `messages.listPinned()` no longer fail zod validation
+  against the server's bare-array response (`{ success, data: [...] }` with no
+  `limit`/`skip`/`total`). A bare array is returned as a complete `Page<T>`
+  (`skip: 0`, `limit`/`total` = array length); paged envelopes still parse. (#3)
+- `VERSION` (sent in the `User-Agent`) was stale at `1.1.0`; it now matches the
+  package version.
+
 ## [Unreleased] — 2026-06-25
 
 ### Changed
