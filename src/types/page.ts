@@ -66,3 +66,30 @@ export function buildListQuery(
   if (params?.limit !== undefined) q.limit = params.limit;
   return q;
 }
+
+/**
+ * Like {@link pageSchema}, for bounded batch/lookup endpoints that return a
+ * bare array — `{ success: true, data: [...] }` with NO `limit`/`skip`/`total`
+ * (e.g. `POST /v1/messages/acks`, `GET /v1/messages/pinned/{chatId}`). Also
+ * accepts the paged shape, so it works against either server behavior. A bare
+ * array is surfaced as a single complete `Page<T>` (`skip: 0`, `limit` and
+ * `total` = the array length) so the public return type stays unchanged.
+ */
+export function arrayOrPageSchema<T extends ZodTypeAny>(item: T) {
+  return z
+    .object({
+      success: z.literal(true),
+      data: z.array(item),
+      limit: z.number().int().optional(),
+      skip: z.number().int().optional(),
+      total: z.number().int().optional(),
+    })
+    .transform(
+      (r): Page<z.infer<T>> => ({
+        data: r.data,
+        limit: r.limit ?? r.data.length,
+        skip: r.skip ?? 0,
+        total: r.total ?? r.data.length,
+      }),
+    );
+}

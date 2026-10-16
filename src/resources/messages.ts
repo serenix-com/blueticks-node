@@ -23,6 +23,7 @@ import {
 } from "../types/scheduled-messages";
 import {
   pageSchema,
+  arrayOrPageSchema,
   dataEnvelope,
   buildListQuery,
   type Page,
@@ -58,8 +59,8 @@ export interface DirectSendMessageBody {
 }
 
 const PublicMessagePageSchema = pageSchema(PublicMessageSchema);
-const BatchMessageAckPageSchema = pageSchema(BatchMessageAckEntrySchema);
-const PinnedMessagePageSchema = pageSchema(PinnedMessageSchema);
+const BatchMessageAckPageSchema = arrayOrPageSchema(BatchMessageAckEntrySchema);
+const PinnedMessagePageSchema = arrayOrPageSchema(PinnedMessageSchema);
 const MessageResponseEnvelope = dataEnvelope(MessageResponseSchema);
 const PublicMessageEnvelope = dataEnvelope(PublicMessageSchema);
 const MessageAckEnvelope = dataEnvelope(MessageAckSchema);
