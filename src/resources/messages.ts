@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { BaseResource } from "../base-resource";
 import {
   PublicMessageSchema,
@@ -5,6 +6,7 @@ import {
   BatchMessageAckEntrySchema,
   MediaSchema,
   LoadOlderResultSchema,
+  LoadCoverageSchema,
   PinnedMessageSchema,
   OkResultSchema,
   type PublicMessage,
@@ -12,6 +14,7 @@ import {
   type BatchMessageAckEntry,
   type Media,
   type LoadOlderResult,
+  type LoadCoverage,
   type PinnedMessage,
   type OkResult,
   type MessageType,
@@ -22,7 +25,6 @@ import {
   type MediaKind,
 } from "../types/scheduled-messages";
 import {
-  pageSchema,
   arrayOrPageSchema,
   dataEnvelope,
   buildListQuery,
@@ -39,6 +41,30 @@ export interface ListMessagesParams extends ListParams {
   messageTypes?: MessageType[];
   loadFromPhoneIfNeeded?: boolean;
   includeMediaContent?: boolean;
+  /** Keyword-set OR search: match if body/caption/filename contains ANY term. */
+  queryAny?: string[];
+  /** MIME prefix filter, e.g. `"application/pdf"` or `"image/"`. */
+  mime?: string;
+  /** Case-insensitive substring match on the document filename. */
+  filenameContains?: string;
+  /** true = only messages with a media attachment; false = only non-media. */
+  hasMedia?: boolean;
+  /** Case-insensitive substring match on the sender JID/phone. */
+  sender?: string;
+}
+
+/** A page of messages. `coverage` reports how far back the chat is loaded, when the server includes it. */
+export interface MessagesPage extends Page<PublicMessage> {
+  coverage?: LoadCoverage;
+}
+
+/** Options for `messages.loadOlder`. */
+export interface LoadOlderOptions {
+  /** How many older pages to pull in one call (1-10, default 1). */
+  pages?: number;
+  /** Stop once the oldest loaded message is at/before this date (ISO 8601 string or epoch seconds/ms). */
+  until_date?: string | number;
+  signal?: AbortSignal;
 }
 
 /** Flat body accepted by `POST /v1/messages/{chatId}` (direct, fire-and-forget send). */
@@ -56,9 +82,24 @@ export interface DirectSendMessageBody {
   secret?: string;
   withTyping?: boolean;
   typingSeconds?: number;
+  /** Participant JIDs to @mention in a group (e.g. `["12025550101@c.us"]`). */
+  mentions?: string[];
 }
 
-const PublicMessagePageSchema = pageSchema(PublicMessageSchema);
+const PublicMessagePageSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.array(PublicMessageSchema),
+    limit: z.number().int(),
+    skip: z.number().int(),
+    total: z.number().int(),
+    coverage: LoadCoverageSchema.nullish(),
+  })
+  .transform((r): MessagesPage => {
+    const page: MessagesPage = { data: r.data, limit: r.limit, skip: r.skip, total: r.total };
+    if (r.coverage) page.coverage = r.coverage;
+    return page;
+  });
 const BatchMessageAckPageSchema = arrayOrPageSchema(BatchMessageAckEntrySchema);
 const PinnedMessagePageSchema = arrayOrPageSchema(PinnedMessageSchema);
 const MessageResponseEnvelope = dataEnvelope(MessageResponseSchema);
@@ -76,7 +117,7 @@ export class MessagesResource extends BaseResource {
    */
   async list(
     params: ListMessagesParams & { signal?: AbortSignal } = {},
-  ): Promise<Page<PublicMessage>> {
+  ): Promise<MessagesPage> {
     const {
       signal,
       chatId,
@@ -87,6 +128,11 @@ export class MessagesResource extends BaseResource {
       messageTypes,
       loadFromPhoneIfNeeded,
       includeMediaContent,
+      queryAny,
+      mime,
+      filenameContains,
+      hasMedia,
+      sender,
       ...listParams
     } = params;
     const query = buildListQuery(listParams);
@@ -101,6 +147,14 @@ export class MessagesResource extends BaseResource {
     }
     if (loadFromPhoneIfNeeded !== undefined) query.loadFromPhoneIfNeeded = loadFromPhoneIfNeeded;
     if (includeMediaContent !== undefined) query.includeMediaContent = includeMediaContent;
+    if (queryAny !== undefined && queryAny.length > 0) {
+      // Server accepts the comma-separated form (terms are split on commas).
+      query.queryAny = queryAny.join(",");
+    }
+    if (mime !== undefined) query.mime = mime;
+    if (filenameContains !== undefined) query.filenameContains = filenameContains;
+    if (hasMedia !== undefined) query.hasMedia = hasMedia;
+    if (sender !== undefined) query.sender = sender;
     return this.client.request({
       method: "GET",
       path: "/v1/messages",
@@ -187,12 +241,16 @@ export class MessagesResource extends BaseResource {
   /**
    * Load older messages.
    *
-   * Asks the engine to pull older history from the connected phone for chats that haven't been fully synced yet. Use this once before paginating with `since` if you need messages older than what's already cached. Requires `chats:read`.
+   * Asks the engine to pull older history from the connected phone for chats that haven't been fully synced yet. Use this before paginating with `since` if you need messages older than what's already cached. Optionally pull several pages in one call via `pages` (WA-paced ~2.5s apart) and/or stop at a target depth via `until_date`; the response reports how far back the chat is now loaded under `coverage`. Requires `chats:read`.
    */
-  async loadOlder(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<LoadOlderResult> {
+  async loadOlder(chatId: string, opts: LoadOlderOptions = {}): Promise<LoadOlderResult> {
+    const body: { pages?: number; until_date?: string | number } = {};
+    if (opts.pages !== undefined) body.pages = opts.pages;
+    if (opts.until_date !== undefined) body.until_date = opts.until_date;
     return this.client.request({
       method: "POST",
       path: `/v1/messages/load_older/${encodeURIComponent(chatId)}`,
+      body: Object.keys(body).length > 0 ? body : undefined,
       schema: LoadOlderResultEnvelope,
       signal: opts.signal,
     });

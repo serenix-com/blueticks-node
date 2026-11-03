@@ -28,6 +28,10 @@ export interface SendMessageBody {
   pollAllowMultiple?: boolean;
   secret?: string;
   sendAt?: string;
+  /** Participant JIDs to @mention in a group (e.g. `["12025550101@c.us"]`). */
+  mentions?: string[];
+  /** Display name shown next to the message in the scheduled-message list (auto-resolved when omitted). */
+  recipientName?: string;
 }
 
 /** Body accepted by `PATCH /v1/scheduled-messages/{id}` — same flat fields as send, all optional. */
@@ -44,6 +48,8 @@ export interface UpdateScheduledMessageBody {
   pollAllowMultiple?: boolean;
   secret?: string;
   sendAt?: string;
+  /** Participant JIDs to @mention in a group (e.g. `["12025550101@c.us"]`). */
+  mentions?: string[];
 }
 
 /** Optional filters accepted by `GET /v1/scheduled-messages`. */

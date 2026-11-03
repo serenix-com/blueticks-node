@@ -53,6 +53,13 @@ export const PublicMessageSchema = z.object({
   filename: z.string().nullish(),
   linkPreview: LinkPreviewSchema.nullish(),
   quotedMessage: PublicQuotedMessageSchema.nullish(),
+  /** Where the message was read from: the live store (`vault`) or a backup. */
+  source: z.enum(["vault", "backup"]).nullish(),
+  /**
+   * Correlation token the sender attached at send time (the `secret` given on
+   * send). Present only on messages sent through this API.
+   */
+  secret: z.string().nullish(),
 });
 
 export type PublicMessage = z.infer<typeof PublicMessageSchema>;
@@ -102,13 +109,33 @@ export const MediaSchema = z.object({
 
 export type Media = z.infer<typeof MediaSchema>;
 
+/**
+ * How far back a chat is now loaded. `oldestLoadedIso` is the deterministic
+ * answer to "have I reached far enough back?".
+ */
+export const LoadCoverageSchema = z.object({
+  /** Epoch MILLISECONDS of the oldest currently-loaded message; omitted when unknown. */
+  oldestLoadedTimestamp: z.number().nullish(),
+  /** ISO 8601 form of `oldestLoadedTimestamp`. */
+  oldestLoadedIso: z.string().nullish(),
+});
+
+export type LoadCoverage = z.infer<typeof LoadCoverageSchema>;
+
 /** Response of `POST /v1/messages/load_older/{chatId}`. */
 export const LoadOlderResultSchema = z.object({
   totalMessages: z.number().int().nullish(),
+  /** Total messages added across the pages this call executed (sum). */
   added: z.number().int().nullish(),
+  /** From the LAST executed page: true = more history may still be pulled. */
   canLoadMore: z.boolean(),
   historyUnavailable: z.boolean(),
+  /** First fatal error across the executed pages; null when the pull succeeded. */
   error: z.string().nullish(),
+  /** How many older pages this call actually pulled (1..pages). */
+  pagesExecuted: z.number().int().nullish(),
+  /** How far back the chat is now loaded. */
+  coverage: LoadCoverageSchema.nullish(),
 });
 
 export type LoadOlderResult = z.infer<typeof LoadOlderResultSchema>;

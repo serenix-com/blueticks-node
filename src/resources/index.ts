@@ -8,6 +8,16 @@ export {
   type ListAudiencesParams,
 } from "./audiences";
 export {
+  BoardsResource,
+  type ListBoardsParams,
+  type CreateBoardParams,
+  type ListBoardItemsParams,
+  type CreateBoardItemParams,
+  type UpdateBoardItemParams,
+  type BulkUpsertItemsParams,
+  type FindSimilarItemsParams,
+} from "./boards";
+export {
   CampaignsResource,
   type CreateCampaignParams,
   type ListCampaignsParams,
@@ -27,10 +37,14 @@ export {
   type AddMembersParams,
   type SetPictureParams,
 } from "./groups";
+export { IdentityResource } from "./identity";
+export { LatestChatsResource, type ListLatestChatsParams } from "./latest-chats";
 export {
   MessagesResource,
   type ListMessagesParams,
   type DirectSendMessageBody,
+  type MessagesPage,
+  type LoadOlderOptions,
 } from "./messages";
 export {
   NewslettersResource,
@@ -38,6 +52,7 @@ export {
   type CreateNewsletterParams,
 } from "./newsletters";
 export { PingResource } from "./ping";
+export { RealtimeResource } from "./realtime";
 export {
   ScheduledMessagesResource,
   type ListScheduledMessagesParams,

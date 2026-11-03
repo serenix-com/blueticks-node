@@ -12,7 +12,8 @@ import {
 import { dataEnvelope } from "../types/page";
 
 export interface GenerateSongParams {
-  lyrics: string;
+  /** Song lyrics. Required unless `instrumental` is true. */
+  lyrics?: string;
   style: string;
   negativeStyle?: string;
   vocalGender?: "m" | "f";

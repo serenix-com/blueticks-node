@@ -85,3 +85,14 @@ describe("client.suno.account", () => {
     expect(res.plan).toBe("Pro Plan");
   });
 });
+
+describe("client.suno.generateSong (optional lyrics)", () => {
+  it("allows omitting lyrics for an instrumental", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({ style: "lofi", instrumental: true });
+      return jsonResponse(200, { success: true, data: { jobId: "job_2", clips: [CLIP] } });
+    });
+    const res = await c.suno.generateSong({ style: "lofi", instrumental: true });
+    expect(res.clips[0]!.id).toBe("clip_1");
+  });
+});
