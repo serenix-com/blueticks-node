@@ -84,3 +84,29 @@ describe("client.webhooks.get/update/delete", () => {
     expect(res.deleted).toBe(true);
   });
 });
+
+describe("client.webhooks signingSecret + from-me event", () => {
+  it("create returns signingSecret and accepts the new event name", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({
+        url: "https://example.test/hook",
+        events: ["new_message_received_from_me_webhook"],
+      });
+      return jsonResponse(201, {
+        success: true,
+        data: { ...WEBHOOK, events: ["new_message_received_from_me_webhook"], signingSecret: "whsec_123" },
+      });
+    });
+    const res = await c.webhooks.create({
+      url: "https://example.test/hook",
+      events: ["new_message_received_from_me_webhook"],
+    });
+    expect(res.signingSecret).toBe("whsec_123");
+  });
+
+  it("signingSecret is optional on reads", async () => {
+    const c = mkClient(() => jsonResponse(200, { success: true, data: WEBHOOK }));
+    const res = await c.webhooks.get("wh_1");
+    expect(res.signingSecret).toBeUndefined();
+  });
+});

@@ -18,6 +18,7 @@ export const WebhookEventTypeSchema = z.enum([
   "campaign.completed",
   "campaign.aborted",
   "new_message_received_webhook",
+  "new_message_received_from_me_webhook",
   "message_reaction_webhook",
   "ack_changed_webhook",
   "participant_joined_via_link_webhook",
@@ -43,6 +44,8 @@ export const WebhookSchema = z.object({
   description: z.string().nullish(),
   status: WebhookStatusSchema,
   createdAt: z.string().datetime({ offset: true }),
+  /** HMAC signing secret for verifying deliveries. */
+  signingSecret: z.string().nullish(),
 });
 
 export type Webhook = z.infer<typeof WebhookSchema>;

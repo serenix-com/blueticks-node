@@ -4,6 +4,7 @@ import {
   ParticipantSchema,
   ChatMutationResultSchema,
   type Chat,
+  type ChatType,
   type Participant,
   type ChatMutationResult,
 } from "../types/chats";
@@ -22,6 +23,10 @@ export interface ListChatsParams extends ListParams {
   includeExtendedInfo?: boolean;
   includeWithoutName?: boolean;
   includeArchive?: boolean;
+  /** Keep only these chat kinds. */
+  kinds?: ChatType[];
+  /** Keep only chats whose last message is at/after this ISO 8601 instant (approximate). */
+  since?: string;
 }
 
 export interface ListParticipantsParams extends ListParams {
@@ -48,6 +53,8 @@ export class ChatsResource extends BaseResource {
       includeExtendedInfo,
       includeWithoutName,
       includeArchive,
+      kinds,
+      since,
       ...listParams
     } = params;
     const query = buildListQuery(listParams);
@@ -57,6 +64,8 @@ export class ChatsResource extends BaseResource {
     if (includeExtendedInfo !== undefined) query.includeExtendedInfo = includeExtendedInfo;
     if (includeWithoutName !== undefined) query.includeWithoutName = includeWithoutName;
     if (includeArchive !== undefined) query.includeArchive = includeArchive;
+    if (kinds !== undefined && kinds.length > 0) query.kinds = kinds.join(",");
+    if (since !== undefined) query.since = since;
     return this.client.request({
       method: "GET",
       path: "/v1/chats",

@@ -108,3 +108,34 @@ describe("client.scheduledMessages.delete", () => {
     expect(res.id).toBe("msg_1");
   });
 });
+
+describe("client.scheduledMessages mentions + recipientName", () => {
+  it("create passes mentions and recipientName through", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({
+        type: "text",
+        text: "hi @Bob",
+        mentions: ["12025550101@c.us"],
+        recipientName: "Team chat",
+      });
+      return jsonResponse(201, { success: true, data: MESSAGE });
+    });
+    const res = await c.scheduledMessages.create("120@g.us", {
+      type: "text",
+      text: "hi @Bob",
+      mentions: ["12025550101@c.us"],
+      recipientName: "Team chat",
+    });
+    expect(res.id).toBe("msg_1");
+  });
+
+  it("update passes mentions through", async () => {
+    const c = mkClient(async (req) => {
+      expect(req.method).toBe("PATCH");
+      expect(await req.json()).toEqual({ mentions: ["12025550101@c.us"] });
+      return jsonResponse(200, { success: true, data: MESSAGE });
+    });
+    const res = await c.scheduledMessages.update("msg_1", { mentions: ["12025550101@c.us"] });
+    expect(res.id).toBe("msg_1");
+  });
+});

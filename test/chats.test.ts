@@ -104,3 +104,24 @@ describe("client.chats side-effects", () => {
     });
   }
 });
+
+describe("client.chats.list (kinds + since)", () => {
+  it("serializes kinds as a comma list and forwards since", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.searchParams.get("kinds")).toBe("contact,newsletter");
+      expect(url.searchParams.get("since")).toBe("2026-04-01T00:00:00+02:00");
+      return jsonResponse(200, { success: true, data: [CHAT], limit: 50, skip: 0, total: 1 });
+    });
+    const page = await c.chats.list({ kinds: ["contact", "newsletter"], since: "2026-04-01T00:00:00+02:00" });
+    expect(page.data[0]!.chatId).toBe("14155551234@c.us");
+  });
+
+  it("omits kinds when the array is empty", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).searchParams.has("kinds")).toBe(false);
+      return jsonResponse(200, { success: true, data: [], limit: 50, skip: 0, total: 0 });
+    });
+    await c.chats.list({ kinds: [] });
+  });
+});

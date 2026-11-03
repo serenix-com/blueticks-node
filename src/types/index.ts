@@ -10,6 +10,30 @@ export {
   type RemovedAudienceContact,
 } from "./audiences";
 export {
+  BoardSchema,
+  BoardDetailSchema,
+  BoardColumnSchema,
+  BoardOptionSchema,
+  BoardRefSchema,
+  BoardItemSchema,
+  CellsMapSchema,
+  ItemSourceSchema,
+  BulkItemsResultSchema,
+  SimilarItemMatchSchema,
+  FindSimilarResultSchema,
+  type Board,
+  type BoardDetail,
+  type BoardColumn,
+  type BoardOption,
+  type BoardRef,
+  type BoardItem,
+  type CellsMap,
+  type ItemSource,
+  type BulkItemsResult,
+  type SimilarItemMatch,
+  type FindSimilarResult,
+} from "./boards";
+export {
   CampaignSchema,
   CampaignStatusSchema,
   type Campaign,
@@ -37,6 +61,22 @@ export {
   type GroupParticipant,
 } from "./groups";
 export {
+  IdentitySchema,
+  IdentityTypeSchema,
+  IdentitySourceSchema,
+  ResolveIdentitiesResultSchema,
+  type Identity,
+  type IdentityType,
+  type IdentitySource,
+  type ResolveIdentitiesResult,
+} from "./identity";
+export {
+  LatestChatSchema,
+  LatestChatsResultSchema,
+  type LatestChat,
+  type LatestChatsResult,
+} from "./latest-chats";
+export {
   OkResultSchema,
   MessageTypeSchema,
   PublicMessageSchema,
@@ -45,6 +85,7 @@ export {
   BatchMessageAckEntrySchema,
   MediaSchema,
   MediaUnavailableReasonSchema,
+  LoadCoverageSchema,
   LoadOlderResultSchema,
   PinnedMessageSchema,
   type OkResult,
@@ -55,6 +96,7 @@ export {
   type BatchMessageAckEntry,
   type Media,
   type MediaUnavailableReason,
+  type LoadCoverage,
   type LoadOlderResult,
   type PinnedMessage,
 } from "./messages";
@@ -74,6 +116,7 @@ export {
   type ListParams,
 } from "./page";
 export { PingSchema, PingConnectionSchema, type Ping, type PingConnection } from "./ping";
+export { RealtimeTokenSchema, type RealtimeToken } from "./realtime";
 export {
   MessageResponseSchema,
   WaMessageKeySchema,

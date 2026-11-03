@@ -236,3 +236,112 @@ describe("client.messages pin/unpin/react", () => {
     expect(res.ok).toBe(true);
   });
 });
+
+describe("client.messages.list (new filters + response fields)", () => {
+  it("serializes queryAny/mime/filenameContains/hasMedia/sender and surfaces coverage", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.searchParams.get("queryAny")).toBe("invoice,receipt");
+      expect(url.searchParams.get("mime")).toBe("application/pdf");
+      expect(url.searchParams.get("filenameContains")).toBe("inv");
+      expect(url.searchParams.get("hasMedia")).toBe("true");
+      expect(url.searchParams.get("sender")).toBe("1415");
+      return jsonResponse(200, {
+        success: true,
+        data: [{ ...PUBLIC_MSG, source: "backup", secret: "corr-1" }],
+        limit: 50,
+        skip: 0,
+        total: 1,
+        coverage: { oldestLoadedTimestamp: 1700000000000, oldestLoadedIso: "2023-11-14T22:13:20.000Z" },
+      });
+    });
+    const page = await c.messages.list({
+      queryAny: ["invoice", "receipt"],
+      mime: "application/pdf",
+      filenameContains: "inv",
+      hasMedia: true,
+      sender: "1415",
+    });
+    expect(page.data[0]!.source).toBe("backup");
+    expect(page.data[0]!.secret).toBe("corr-1");
+    expect(page.coverage?.oldestLoadedIso).toBe("2023-11-14T22:13:20.000Z");
+  });
+
+  it("omits coverage when the server does not send it", async () => {
+    const c = mkClient((req) => {
+      expect(new URL(req.url).searchParams.has("queryAny")).toBe(false);
+      return jsonResponse(200, { success: true, data: [PUBLIC_MSG], limit: 50, skip: 0, total: 1 });
+    });
+    const page = await c.messages.list({ queryAny: [] });
+    expect(page.coverage).toBeUndefined();
+  });
+});
+
+describe("client.messages.send (mentions)", () => {
+  it("passes mentions through in the body", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({ type: "text", text: "hi @Bob", mentions: ["12025550101@c.us"] });
+      return jsonResponse(201, {
+        success: true,
+        data: { id: "m1", to: "120@g.us", type: "text", status: "sent", createdAt: "2026-04-22T10:00:00Z" },
+      });
+    });
+    await c.messages.send("120@g.us", { type: "text", text: "hi @Bob", mentions: ["12025550101@c.us"] });
+  });
+});
+
+describe("client.messages.get (secret/source)", () => {
+  it("parses secret and source", async () => {
+    const c = mkClient(() =>
+      jsonResponse(200, { success: true, data: { ...PUBLIC_MSG, secret: "s1", source: "vault" } }),
+    );
+    const res = await c.messages.get("k1");
+    expect(res.secret).toBe("s1");
+    expect(res.source).toBe("vault");
+  });
+});
+
+describe("client.messages.loadOlder (pages / until_date / coverage)", () => {
+  it("sends pages + until_date and parses pagesExecuted + coverage", async () => {
+    const c = mkClient(async (req) => {
+      expect(req.method).toBe("POST");
+      expect(await req.json()).toEqual({ pages: 3, until_date: "2025-01-01T00:00:00Z" });
+      return jsonResponse(200, {
+        success: true,
+        data: {
+          totalMessages: 300,
+          added: 120,
+          canLoadMore: false,
+          historyUnavailable: false,
+          error: null,
+          pagesExecuted: 2,
+          coverage: { oldestLoadedTimestamp: 1735689600000, oldestLoadedIso: "2025-01-01T00:00:00.000Z" },
+        },
+      });
+    });
+    const res = await c.messages.loadOlder("120@g.us", { pages: 3, until_date: "2025-01-01T00:00:00Z" });
+    expect(res.pagesExecuted).toBe(2);
+    expect(res.coverage?.oldestLoadedTimestamp).toBe(1735689600000);
+    expect(res.canLoadMore).toBe(false);
+  });
+
+  it("sends no body when no options are given", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.text()).toBe("");
+      return jsonResponse(200, {
+        success: true,
+        data: { canLoadMore: true, historyUnavailable: false, pagesExecuted: 1, coverage: {} },
+      });
+    });
+    const res = await c.messages.loadOlder("120@g.us");
+    expect(res.pagesExecuted).toBe(1);
+  });
+
+  it("accepts a numeric until_date", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({ until_date: 1735689600 });
+      return jsonResponse(200, { success: true, data: { canLoadMore: true, historyUnavailable: false } });
+    });
+    await c.messages.loadOlder("120@g.us", { until_date: 1735689600 });
+  });
+});
