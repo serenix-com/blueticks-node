@@ -146,4 +146,27 @@ describe("client.groups members", () => {
     const res = await c.groups.setPicture("120@g.us", { url: "https://cdn.test/pic.jpg" });
     expect(res.id).toBe("120@g.us");
   });
+
+  it("getPicture GETs the picture url", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("GET");
+      expect(new URL(req.url).pathname).toBe("/v1/groups/120%40g.us/picture");
+      return jsonResponse(200, { success: true, data: { url: "https://cdn.test/p.jpg" } });
+    });
+    expect(await c.groups.getPicture("120@g.us")).toEqual({ url: "https://cdn.test/p.jpg" });
+  });
+
+  it("getPicture returns url null when the group has no picture", async () => {
+    const c = mkClient(() => jsonResponse(200, { success: true, data: { url: null } }));
+    expect(await c.groups.getPicture("120@g.us")).toEqual({ url: null });
+  });
+
+  it("removePicture DELETEs the picture", async () => {
+    const c = mkClient((req) => {
+      expect(req.method).toBe("DELETE");
+      expect(new URL(req.url).pathname).toBe("/v1/groups/120%40g.us/picture");
+      return jsonResponse(200, { success: true, data: { ok: true } });
+    });
+    expect(await c.groups.removePicture("120@g.us")).toEqual({ ok: true });
+  });
 });
