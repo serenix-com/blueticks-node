@@ -48,6 +48,8 @@ export interface SetPictureParams {
 
 const GroupListItemPageSchema = pageSchema(GroupListItemSchema);
 const GroupEnvelope = dataEnvelope(GroupSchema);
+const GroupPictureEnvelope = dataEnvelope(z.object({ url: z.string().nullable() }));
+const GroupPictureRemovedEnvelope = dataEnvelope(z.object({ ok: z.boolean() }));
 
 export class GroupsResource extends BaseResource {
   /**
@@ -225,6 +227,40 @@ export class GroupsResource extends BaseResource {
       path: `/v1/groups/${encodeURIComponent(groupId)}/picture`,
       body,
       schema: GroupEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Get group picture.
+   *
+   * The current group picture as a short-lived WhatsApp CDN `url`, or `url: null` when the group has none. Requires `groups:read`.
+   */
+  async getPicture(
+    groupId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<{ url: string | null }> {
+    return this.client.request({
+      method: "GET",
+      path: `/v1/groups/${encodeURIComponent(groupId)}/picture`,
+      schema: GroupPictureEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Remove group picture.
+   *
+   * Remove the group picture. Gateway (Baileys) engine only: a Chrome-extension-only account gets `501 unsupported_command`. Only group admins can when the group is admins-only-edit (`403 not_authorized`). Requires `groups:write`.
+   */
+  async removePicture(
+    groupId: string,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<{ ok: boolean }> {
+    return this.client.request({
+      method: "DELETE",
+      path: `/v1/groups/${encodeURIComponent(groupId)}/picture`,
+      schema: GroupPictureRemovedEnvelope,
       signal: opts.signal,
     });
   }
