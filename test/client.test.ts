@@ -74,7 +74,7 @@ describe("Blueticks constructor", () => {
       }),
     });
     await c.ping();
-    expect(ua).toContain("blueticks-node/4.0.1");
+    expect(ua).toContain("blueticks-node/4.1.0");
   });
 
   it("appends userAgent suffix", async () => {
@@ -88,6 +88,6 @@ describe("Blueticks constructor", () => {
       }),
     });
     await c.ping();
-    expect(ua).toBe("blueticks-node/4.0.1 myapp/1.2");
+    expect(ua).toBe("blueticks-node/4.1.0 myapp/1.2");
   });
 });

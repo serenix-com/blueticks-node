@@ -3,6 +3,20 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [4.1.0] — 2026-11-06
+
+### Added
+
+- `groups.getPicture(groupId)` returns `{ url }` (a short-lived WhatsApp image URL,
+  `null` when the group has no picture) and `groups.removePicture(groupId)` returns
+  `{ ok }`. `removePicture` works on gateway (Baileys) accounts only; a
+  Chrome-extension-only account gets `501 unsupported_command`. Changing the picture
+  as a non-admin on an admins-only-edit group gets `403 not_authorized`. Needs the
+  backend that serves `GET`/`DELETE /v1/groups/{id}/picture`. (#6)
+- New resources `boards` (with items), `identity`, `latestChats` and `realtime`; new
+  optional params and fields on `messages`, `chats`, `scheduledMessages`, `webhooks`
+  and `suno`; refreshed `openapi.snapshot.json`. (#5)
+
 ## [4.0.1] — 2026-10-16
 
 ### Fixed
