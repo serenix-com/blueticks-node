@@ -45,6 +45,20 @@ describe("verifyWebhook", () => {
     expect(evt.data).toEqual({ message_id: "msg_1" });
   });
 
+  it("keeps the envelope idempotency_key when present and omits it when absent", () => {
+    const keyed = JSON.stringify({
+      id: "evt_2",
+      type: "poll_vote_webhook",
+      created_at: "2026-04-30T12:00:00.000Z",
+      data: { option: "a" },
+      idempotency_key: "poll_vote_abc123",
+    });
+    const sig = createHmac("sha256", SECRET).update(`${TS}.${keyed}`).digest("hex");
+    const h = headers({ "Blueticks-Webhook-Signature": `v1=${sig}` });
+    expect(verifyWebhook(keyed, h, SECRET, opts).idempotency_key).toBe("poll_vote_abc123");
+    expect(verifyWebhook(BODY, headers(), SECRET, opts).idempotency_key).toBeUndefined();
+  });
+
   it("accepts a Buffer / Uint8Array payload", () => {
     expect(verifyWebhook(Buffer.from(BODY), headers(), SECRET, opts).id).toBe("evt_1");
     expect(verifyWebhook(new TextEncoder().encode(BODY), headers(), SECRET, opts).id).toBe("evt_1");

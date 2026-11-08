@@ -59,6 +59,12 @@ export const WebhookEventSchema = z.object({
   type: z.string(),
   created_at: z.string(),
   data: z.record(z.unknown()),
+  /**
+   * Stable key for events where the same occurrence can arrive under different
+   * delivery ids (for example a poll vote). Also sent as the
+   * `Blueticks-Idempotency-Key` header. Absent for events without one.
+   */
+  idempotency_key: z.string().optional(),
 });
 
 export type WebhookEvent = z.infer<typeof WebhookEventSchema>;
