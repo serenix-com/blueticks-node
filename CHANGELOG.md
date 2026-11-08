@@ -3,6 +3,15 @@
 All notable changes to `blueticks` (Node/TS SDK) are documented here. Follows
 [Semantic Versioning](https://semver.org/) and [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- `verifyWebhook(payload, headers, secret, { tolerance })` verifies a webhook
+  delivery (`v1=` HMAC-SHA256 over `timestamp.body`, constant-time compare,
+  default 300 s tolerance) and returns a typed `WebhookEvent`. Throws
+  `WebhookVerificationError`. Matches the Python, Ruby, PHP and Go helpers.
+
 ## [4.1.0] — 2026-11-06
 
 ### Added

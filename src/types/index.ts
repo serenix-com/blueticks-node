@@ -181,6 +181,8 @@ export {
   WebhookSchema,
   WebhookStatusSchema,
   WebhookEventTypeSchema,
+  WebhookEventSchema,
+  type WebhookEvent,
   type Webhook,
   type WebhookStatus,
   type WebhookEventType,

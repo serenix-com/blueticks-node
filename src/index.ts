@@ -14,3 +14,10 @@ export {
 } from "./errors";
 export type { ErrorDetail } from "./errors";
 export { VERSION } from "./version";
+export {
+  verifyWebhook,
+  WebhookVerificationError,
+  DEFAULT_WEBHOOK_TOLERANCE_SECONDS,
+} from "./webhooks";
+export type { VerifyWebhookOptions, WebhookHeaders } from "./webhooks";
+export type { WebhookEvent } from "./types/webhooks";
