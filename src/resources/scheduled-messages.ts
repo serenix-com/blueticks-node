@@ -51,8 +51,6 @@ export interface SendMessageBody {
 /** Body accepted by `PATCH /v1/scheduled-messages/{id}` — same flat fields as send, all optional. */
 export interface UpdateScheduledMessageBody {
   type?: "text" | "media" | "poll";
-  recurrence?: RecurrenceParams;
-  waLabelIds?: string[];
   mediaFileId?: string;
   mediaMimeType?: string;
   text?: string;
