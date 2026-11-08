@@ -6,7 +6,6 @@ import {
   BatchMessageAckEntrySchema,
   MediaSchema,
   LoadOlderResultSchema,
-  LoadCoverageSchema,
   PinnedMessageSchema,
   OkResultSchema,
   type PublicMessage,
@@ -14,7 +13,10 @@ import {
   type BatchMessageAckEntry,
   type Media,
   type LoadOlderResult,
-  type LoadCoverage,
+  MessagesListCoverageSchema,
+  MessageSourcesSchema,
+  type MessagesListCoverage,
+  type MessageSources,
   type PinnedMessage,
   type OkResult,
   type MessageType,
@@ -23,16 +25,21 @@ import {
   MessageResponseSchema,
   type MessageResponse,
   type MediaKind,
+  type ButtonReplyParams,
 } from "../types/scheduled-messages";
 import {
   arrayOrPageSchema,
   dataEnvelope,
   buildListQuery,
+  addEngineTargetQuery,
+  AnsweredBySchema,
+  type EngineSelectorParams,
+  type EngineTargetParams,
   type Page,
   type ListParams,
 } from "../types/page";
 
-export interface ListMessagesParams extends ListParams {
+export interface ListMessagesParams extends ListParams, EngineTargetParams {
   chatId?: string;
   searchToken?: string;
   order?: "asc" | "desc";
@@ -55,7 +62,15 @@ export interface ListMessagesParams extends ListParams {
 
 /** A page of messages. `coverage` reports how far back the chat is loaded, when the server includes it. */
 export interface MessagesPage extends Page<PublicMessage> {
-  coverage?: LoadCoverage;
+  coverage?: MessagesListCoverage;
+  /** True when more pages exist beyond this one. */
+  hasMore?: boolean;
+  /** True when the requested `since` bound was reached while loading. */
+  sinceReached?: boolean;
+  /** How many older pages were loaded automatically to satisfy the query. */
+  autoLoadedPages?: number;
+  /** Count of results per source (e.g. `{ backup: 1 }`). */
+  sources?: MessageSources;
 }
 
 /** Options for `messages.loadOlder`. */
@@ -68,8 +83,18 @@ export interface LoadOlderOptions {
 }
 
 /** Flat body accepted by `POST /v1/messages/{chatId}` (direct, fire-and-forget send). */
-export interface DirectSendMessageBody {
-  type: "text" | "media" | "poll";
+export interface DirectSendMessageBody extends EngineSelectorParams {
+  /** Optional: omit it when sending a `buttonReply` or a media message identified by `mediaFileId`. */
+  type?: "text" | "media" | "poll";
+  /** Answer a menu/button message. `replyTo` is the quoted message id; `buttonId` the chosen option. */
+  buttonReply?: ButtonReplyParams;
+  /** Id returned by `POST /v1/uploads`; send a file uploaded there. Pair with `mediaMimeType`. */
+  mediaFileId?: string;
+  mediaMimeType?: string;
+  /** Sender number (E.164) to send from, when the account has several numbers. */
+  from?: string;
+  /** Native WhatsApp Business label ids to apply to the chat (at most 20). */
+  waLabelIds?: string[];
   text?: string;
   replyTo?: string;
   mediaUrl?: string;
@@ -93,11 +118,23 @@ const PublicMessagePageSchema = z
     limit: z.number().int(),
     skip: z.number().int(),
     total: z.number().int(),
-    coverage: LoadCoverageSchema.nullish(),
+    coverage: MessagesListCoverageSchema.nullish(),
+    answeredBy: AnsweredBySchema.nullish(),
+    nextCursor: z.string().nullish(),
+    hasMore: z.boolean().nullish(),
+    sinceReached: z.boolean().nullish(),
+    autoLoadedPages: z.number().int().nullish(),
+    sources: MessageSourcesSchema.nullish(),
   })
   .transform((r): MessagesPage => {
     const page: MessagesPage = { data: r.data, limit: r.limit, skip: r.skip, total: r.total };
     if (r.coverage) page.coverage = r.coverage;
+    if (r.answeredBy) page.answeredBy = r.answeredBy;
+    if (r.nextCursor !== undefined && r.nextCursor !== null) page.nextCursor = r.nextCursor;
+    if (r.hasMore !== undefined && r.hasMore !== null) page.hasMore = r.hasMore;
+    if (r.sinceReached !== undefined && r.sinceReached !== null) page.sinceReached = r.sinceReached;
+    if (r.autoLoadedPages !== undefined && r.autoLoadedPages !== null) page.autoLoadedPages = r.autoLoadedPages;
+    if (r.sources) page.sources = r.sources;
     return page;
   });
 const BatchMessageAckPageSchema = arrayOrPageSchema(BatchMessageAckEntrySchema);
@@ -135,7 +172,7 @@ export class MessagesResource extends BaseResource {
       sender,
       ...listParams
     } = params;
-    const query = buildListQuery(listParams);
+    const query = addEngineTargetQuery(buildListQuery(listParams), listParams);
     if (chatId !== undefined) query.chatId = chatId;
     if (searchToken !== undefined) query.searchToken = searchToken;
     if (order !== undefined) query.order = order;

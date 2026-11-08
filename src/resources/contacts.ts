@@ -40,13 +40,15 @@ export class ContactsResource extends BaseResource {
    */
   async listCommonGroups(
     id: string,
-    opts: { signal?: AbortSignal } = {},
+    params: ListParams & { signal?: AbortSignal } = {},
   ): Promise<Page<GroupListItem>> {
+    const { signal, ...listParams } = params;
     return this.client.request({
       method: "GET",
       path: `/v1/contacts/${encodeURIComponent(id)}/common_groups`,
+      query: buildListQuery(listParams),
       schema: GroupListItemPageSchema,
-      signal: opts.signal,
+      signal,
     });
   }
 }

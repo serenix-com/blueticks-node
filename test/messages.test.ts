@@ -345,3 +345,97 @@ describe("client.messages.loadOlder (pages / until_date / coverage)", () => {
     await c.messages.loadOlder("120@g.us", { until_date: 1735689600 });
   });
 });
+
+describe("client.messages.list (engine targeting + new message fields)", () => {
+  it("forwards engine/engineId/numberId and parses waType, groupEvent, call, interactive, reactions", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.searchParams.get("engine")).toBe("regular");
+      expect(url.searchParams.get("engineId")).toBe("eng_9");
+      expect(url.searchParams.get("numberId")).toBe("num_2");
+      return jsonResponse(200, {
+        success: true,
+        data: [
+          { ...PUBLIC_MSG, type: "chat", waType: "buttons_response", interactive: { kind: "buttons_response", selectedId: "b1", selectedTitle: "Yes", quotedId: "false_120@g.us_Q" } },
+          { ...PUBLIC_MSG, type: "chat", waType: "gp2", subtype: "add", groupEvent: { action: "add", actor: "111@c.us", targets: ["222@c.us"] } },
+          { ...PUBLIC_MSG, type: "call_log", waType: "call_log", call: { direction: "in", media: "voice", outcome: "answered", durationSec: 42, isGroup: false } },
+          { ...PUBLIC_MSG, reactions: [{ emoji: "\u{1F44D}", senderId: "333@c.us", fromMe: false, timestamp: "2026-04-22T10:01:00Z" }] },
+        ],
+        limit: 50,
+        skip: 0,
+        total: 4,
+        answeredBy: { engineId: "eng_9", numberId: "num_2", phoneNumber: "14155551234" },
+        nextCursor: "50",
+        hasMore: true,
+        sinceReached: true,
+        autoLoadedPages: 0,
+        sources: { backup: 1 },
+        coverage: { oldestLoadedIso: "2026-04-01T00:00:00.000Z", messagesScanned: 120, truncated: false, indexOnly: false },
+      });
+    });
+    const page = await c.messages.list({ engine: "regular", engineId: "eng_9", numberId: "num_2" });
+    expect(page.data[0]!.interactive?.selectedTitle).toBe("Yes");
+    expect(page.data[0]!.waType).toBe("buttons_response");
+    expect(page.data[1]!.groupEvent?.action).toBe("add");
+    expect(page.data[1]!.subtype).toBe("add");
+    expect(page.data[2]!.call?.durationSec).toBe(42);
+    expect(page.data[3]!.reactions?.[0]!.emoji).toBe("\u{1F44D}");
+    expect(page.answeredBy?.phoneNumber).toBe("14155551234");
+    expect(page.nextCursor).toBe("50");
+    expect(page.hasMore).toBe(true);
+    expect(page.sinceReached).toBe(true);
+    expect(page.sources?.backup).toBe(1);
+    expect(page.coverage?.messagesScanned).toBe(120);
+  });
+
+  it("leaves the new fields undefined when the server omits them", async () => {
+    const c = mkClient(() => jsonResponse(200, { success: true, data: [PUBLIC_MSG], limit: 50, skip: 0, total: 1 }));
+    const page = await c.messages.list();
+    expect(page.answeredBy).toBeUndefined();
+    expect(page.nextCursor).toBeUndefined();
+    expect(page.hasMore).toBeUndefined();
+    expect(page.data[0]!.call).toBeUndefined();
+    expect(page.data[0]!.reactions).toBeUndefined();
+  });
+});
+
+describe("client.messages.send (buttonReply, type optional, labels, media ids)", () => {
+  it("sends a menu reply with no type and the new fields", async () => {
+    const c = mkClient(async (req) => {
+      expect(new URL(req.url).pathname).toBe("/v1/messages/120%40g.us");
+      expect(await req.json()).toEqual({
+        buttonReply: { replyTo: "false_120@g.us_M1", buttonId: "b1" },
+        engine: "gateway",
+        numberId: "num_2",
+      });
+      return jsonResponse(201, { success: true, data: { to: "120@g.us", type: "text", status: "sent", createdAt: "2026-04-22T10:00:00Z" } });
+    });
+    const res = await c.messages.send("120@g.us", {
+      buttonReply: { replyTo: "false_120@g.us_M1", buttonId: "b1" },
+      engine: "gateway",
+      numberId: "num_2",
+    });
+    expect(res.status).toBe("sent");
+  });
+
+  it("sends mediaFileId, mediaMimeType, from and waLabelIds", async () => {
+    const c = mkClient(async (req) => {
+      expect(await req.json()).toEqual({
+        type: "media",
+        mediaFileId: "Ab12Cd34Ef56",
+        mediaMimeType: "image/png",
+        from: "+15550001234",
+        waLabelIds: ["3"],
+      });
+      return jsonResponse(201, { success: true, data: { to: "120@g.us", type: "media", status: "sent", createdAt: "2026-04-22T10:00:00Z" } });
+    });
+    const res = await c.messages.send("120@g.us", {
+      type: "media",
+      mediaFileId: "Ab12Cd34Ef56",
+      mediaMimeType: "image/png",
+      from: "+15550001234",
+      waLabelIds: ["3"],
+    });
+    expect(res.type).toBe("media");
+  });
+});

@@ -80,3 +80,16 @@ describe("client.latestChats.list", () => {
     await expect(c.latestChats.list()).rejects.toBeInstanceOf(ValidationError);
   });
 });
+
+describe("client.latestChats.list (engine targeting)", () => {
+  it("forwards engineId and phone", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.searchParams.get("engineId")).toBe("eng_7");
+      expect(url.searchParams.get("phone")).toBe("14155551234");
+      return jsonResponse(200, { success: true, data: LATEST });
+    });
+    const res = await c.latestChats.list({ engineId: "eng_7", phone: "14155551234" });
+    expect(res.totalChats).toBe(120);
+  });
+});

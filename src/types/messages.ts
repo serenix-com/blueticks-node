@@ -37,6 +37,87 @@ export const PublicQuotedMessageSchema = z.object({
 
 export type PublicQuotedMessage = z.infer<typeof PublicQuotedMessageSchema>;
 
+/** A call-log entry (`type: call_log`). */
+export const CallSchema = z.object({
+  direction: z.enum(["in", "out"]),
+  media: z.enum(["voice", "video"]),
+  outcome: z.enum(["answered", "missed", "rejected", "unknown"]),
+  /** Duration in seconds, set for answered calls. */
+  durationSec: z.number().int().min(0).nullish(),
+  isGroup: z.boolean(),
+});
+
+export type Call = z.infer<typeof CallSchema>;
+
+/** A normalized group notice (join, add, promote, subject change, ...). */
+export const GroupEventSchema = z.object({
+  action: z.enum([
+    "join",
+    "add",
+    "leave",
+    "remove",
+    "promote",
+    "demote",
+    "subject",
+    "description",
+    "picture",
+    "settings",
+    "create",
+    "modify",
+    "auto_add",
+    "join_request",
+    "participants_resync",
+    "other",
+  ]),
+  actor: z.string().nullish(),
+  targets: z.array(z.string()).nullish(),
+});
+
+export type GroupEvent = z.infer<typeof GroupEventSchema>;
+
+/** An option of an interactive menu (button, list row). */
+export const InteractiveOptionSchema = z.object({
+  id: z.string().nullish(),
+  title: z.string().nullish(),
+  description: z.string().nullish(),
+  section: z.string().nullish(),
+});
+
+export type InteractiveOption = z.infer<typeof InteractiveOptionSchema>;
+
+/** An interactive menu (buttons, list, template) or a reply to one. */
+export const InteractiveSchema = z.object({
+  kind: z.enum([
+    "buttons",
+    "native_flow",
+    "buttons_response",
+    "list",
+    "list_response",
+    "template",
+    "template_button_reply",
+    "interactive",
+    "interactive_response",
+  ]),
+  options: z.array(InteractiveOptionSchema).nullish(),
+  selectedId: z.string().nullish(),
+  selectedTitle: z.string().nullish(),
+  quotedId: z.string().nullish(),
+});
+
+export type Interactive = z.infer<typeof InteractiveSchema>;
+
+/** A reaction to a message. */
+export const ReactionSchema = z.object({
+  emoji: z.string(),
+  /** Reactor JID (`@c.us`), best-effort. */
+  senderId: z.string().nullish(),
+  /** True when the connected account is the reactor. */
+  fromMe: z.boolean().nullish(),
+  timestamp: z.string().datetime({ offset: true }).nullish(),
+});
+
+export type Reaction = z.infer<typeof ReactionSchema>;
+
 /** A WhatsApp message as read back from the engine store. */
 export const PublicMessageSchema = z.object({
   waMessageKey: WaMessageKeySchema,
@@ -46,7 +127,16 @@ export const PublicMessageSchema = z.object({
   senderName: z.string().nullish(),
   timestamp: z.string().datetime({ offset: true }).nullish(),
   text: z.string().nullish(),
+  /** DEPRECATED legacy message type; prefer `waType`. */
   type: z.string(),
+  /** WhatsApp Web's own message type, e.g. `chat`, `image`, `buttons_response`. */
+  waType: z.string().nullish(),
+  /** WhatsApp Web's raw message subtype on group notices, e.g. `add`, `invite`. */
+  subtype: z.string().nullish(),
+  groupEvent: GroupEventSchema.nullish(),
+  call: CallSchema.nullish(),
+  interactive: InteractiveSchema.nullish(),
+  reactions: z.array(ReactionSchema).nullish(),
   fromMe: z.boolean(),
   ack: z.number().int().nullish(),
   mediaUrl: z.string().nullish(),
@@ -139,6 +229,31 @@ export const LoadOlderResultSchema = z.object({
 });
 
 export type LoadOlderResult = z.infer<typeof LoadOlderResultSchema>;
+
+/**
+ * Coverage of a `GET /v1/messages` read: how far back the store is loaded,
+ * plus the engine scan report when the read scanned the store.
+ */
+export const MessagesListCoverageSchema = LoadCoverageSchema.extend({
+  /** How many stored messages the engine evaluated the query against (0 = only the WhatsApp search index was consulted). */
+  messagesScanned: z.number().int().nullish(),
+  /** True when the scan stopped at its cap before exhausting the store; older matches may exist. */
+  truncated: z.boolean().nullish(),
+  /** True when no local scan ran and results came only from the WhatsApp search index; an empty result is inconclusive. */
+  indexOnly: z.boolean().nullish(),
+  /** ISO 8601 timestamp of the oldest message the scan evaluated. */
+  oldestScannedIso: z.string().nullish(),
+});
+
+export type MessagesListCoverage = z.infer<typeof MessagesListCoverageSchema>;
+
+/** Where rows of a message read came from, when not all from the live engine store. */
+export const MessageSourcesSchema = z.object({
+  /** Messages in this page served from the server-side message backup. */
+  backup: z.number().int().nullish(),
+});
+
+export type MessageSources = z.infer<typeof MessageSourcesSchema>;
 
 /** A pinned message row from `GET /v1/messages/pinned/{chatId}`. */
 export const PinnedMessageSchema = z.object({

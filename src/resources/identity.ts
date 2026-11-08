@@ -8,7 +8,7 @@ import {
 import { dataEnvelope } from "../types/page";
 
 const IdentityEnvelope = dataEnvelope(IdentitySchema);
-const ResolveIdentitiesEnvelope = dataEnvelope(ResolveIdentitiesResultSchema);
+const ResolveIdentitiesEnvelope = ResolveIdentitiesResultSchema;
 
 export class IdentityResource extends BaseResource {
   /**
