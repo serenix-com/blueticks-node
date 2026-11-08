@@ -49,3 +49,16 @@ export const WebhookSchema = z.object({
 });
 
 export type Webhook = z.infer<typeof WebhookSchema>;
+
+/**
+ * The JSON body POSTed to your webhook endpoint. Not an API response type, and
+ * unlike API responses its keys are the raw wire names (`created_at`).
+ */
+export const WebhookEventSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  created_at: z.string(),
+  data: z.record(z.unknown()),
+});
+
+export type WebhookEvent = z.infer<typeof WebhookEventSchema>;
