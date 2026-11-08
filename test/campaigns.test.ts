@@ -86,3 +86,27 @@ describe("client.campaigns lifecycle", () => {
     });
   }
 });
+
+describe("client.campaigns.create (sendAt)", () => {
+  it("passes sendAt through in the body", async () => {
+    const c = new Blueticks({
+      apiKey: "bt_test_x",
+      baseUrl: "https://example.test",
+      fetch: mockFetch(async (req) => {
+        expect(await req.json()).toEqual({
+          name: "Launch",
+          audienceId: "aud_1",
+          text: "Hi {firstName}",
+          sendAt: "2026-12-01T09:00:00+02:00",
+        });
+        return jsonResponse(201, { success: true, data: CAMPAIGN });
+      }),
+    });
+    await c.campaigns.create({
+      name: "Launch",
+      audienceId: "aud_1",
+      text: "Hi {firstName}",
+      sendAt: "2026-12-01T09:00:00+02:00",
+    });
+  });
+});

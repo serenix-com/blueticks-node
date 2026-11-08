@@ -57,6 +57,73 @@ export const MessageStatusSchema = z.enum([
 
 export type MessageStatus = z.infer<typeof MessageStatusSchema>;
 
+export const RecurrenceFrequencySchema = z.enum(["daily", "weekly", "monthly", "yearly"]);
+
+export type RecurrenceFrequency = z.infer<typeof RecurrenceFrequencySchema>;
+
+export const WeekdaySchema = z.enum(["MO", "TU", "WE", "TH", "FR", "SA", "SU"]);
+
+export type Weekday = z.infer<typeof WeekdaySchema>;
+
+/** The repeat rule of a recurring scheduled message (absent for one-time messages). */
+export const RecurrenceSchema = z.object({
+  frequency: RecurrenceFrequencySchema,
+  interval: z.number().int(),
+  byWeekday: z.array(WeekdaySchema).nullish(),
+  endsAfter: z.number().int().nullish(),
+  endsOn: z.string().datetime({ offset: true }).nullish(),
+  timezone: z.string().nullish(),
+});
+
+export type Recurrence = z.infer<typeof RecurrenceSchema>;
+
+/** Outcome of the native WhatsApp Business label assignment requested with a send. */
+export const WaLabelsStatusSchema = z.object({
+  /** Number of label ids requested. */
+  requested: z.number().int(),
+  /** Whether WhatsApp accepted the label change. */
+  applied: z.boolean(),
+  /** Reason the labels were not applied (e.g. `wa_business_required`), else null. */
+  error: z.string().nullish(),
+});
+
+export type WaLabelsStatus = z.infer<typeof WaLabelsStatusSchema>;
+
+/** Non-fatal advisory attached to a message (e.g. it was queued with no engine online). */
+export const MessageWarningSchema = z.object({
+  code: z.enum(["no_engine_connected"]),
+  message: z.string(),
+});
+
+export type MessageWarning = z.infer<typeof MessageWarningSchema>;
+
+/** Reply to an interactive menu (button press or list row selection). */
+export interface ButtonReplyParams {
+  /** The menu being answered: its message key (`waMessageKey`). */
+  replyTo: string;
+  /** The id of the menu button to press. Exactly one of `buttonId` / `rowId`. */
+  buttonId?: string;
+  /** The id of the list row to select. Exactly one of `buttonId` / `rowId`. */
+  rowId?: string;
+  /** Ignored by the server: the reply text is always taken from the menu itself. */
+  buttonTitle?: string;
+}
+
+/** Repeat rule accepted when scheduling a recurring message. */
+export interface RecurrenceParams {
+  frequency: RecurrenceFrequency;
+  /** Repeat every N frequency units (1-365, default 1). */
+  interval?: number;
+  /** Weekdays to send on; only with `frequency: "weekly"`. */
+  byWeekday?: Weekday[];
+  /** Stop after this many sends (1-366). Exactly one of `endsAfter` / `endsOn` is required. */
+  endsAfter?: number;
+  /** Stop after this instant (ISO 8601 with offset). Exactly one of `endsAfter` / `endsOn` is required. */
+  endsOn?: string;
+  /** IANA zone the schedule repeats in. */
+  timezone?: string;
+}
+
 /**
  * A sent or scheduled message, as returned by the Scheduled Messages
  * endpoints and by `POST /v1/messages/{chatId}` (direct send).
@@ -83,6 +150,11 @@ export const MessageResponseSchema = z.object({
   failureReason: z.string().nullish(),
   secret: z.string().nullish(),
   linkPreview: LinkPreviewSchema.nullish(),
+  /** The recipient's display name, or null when the message carries no name. */
+  recipientName: z.string().nullish(),
+  recurrence: RecurrenceSchema.nullish(),
+  waLabels: WaLabelsStatusSchema.nullish(),
+  warning: MessageWarningSchema.nullish(),
 });
 
 export type MessageResponse = z.infer<typeof MessageResponseSchema>;

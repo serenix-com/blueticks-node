@@ -1,4 +1,5 @@
 import { BaseResource } from "../base-resource";
+import { z } from "zod";
 import {
   ChatSchema,
   ParticipantSchema,
@@ -8,18 +9,22 @@ import {
   type Participant,
   type ChatMutationResult,
 } from "../types/chats";
+import { WaLabelSchema, type WaLabel } from "../types/wa-labels";
 import {
   pageSchema,
   dataEnvelope,
   buildListQuery,
+  addEngineTargetQuery,
+  type EngineTargetParams,
   type Page,
   type ListParams,
 } from "../types/page";
 
-export interface ListChatsParams extends ListParams {
+export interface ListChatsParams extends ListParams, EngineTargetParams {
   searchToken?: string;
   filter?: "groups" | "contacts" | "newsletters";
   includeLastMessage?: boolean;
+  /** @deprecated No longer documented in the API spec; still forwarded for compatibility. */
   includeExtendedInfo?: boolean;
   includeWithoutName?: boolean;
   includeArchive?: boolean;
@@ -29,14 +34,21 @@ export interface ListChatsParams extends ListParams {
   since?: string;
 }
 
-export interface ListParticipantsParams extends ListParams {
+export interface ListParticipantsParams extends ListParams, EngineTargetParams {
   searchToken?: string;
+}
+
+/** Body accepted by `PATCH /v1/chats/{chatId}/wa-labels`: the full replacement label set. */
+export interface SetChatWaLabelsParams {
+  /** Native WhatsApp Business label ids (from `wa-labels.list`). At most 20; empty clears all. */
+  labelIds: string[];
 }
 
 const ChatPageSchema = pageSchema(ChatSchema);
 const ParticipantPageSchema = pageSchema(ParticipantSchema);
 const ChatEnvelope = dataEnvelope(ChatSchema);
 const ChatMutationEnvelope = dataEnvelope(ChatMutationResultSchema);
+const WaLabelListEnvelope = dataEnvelope(z.array(WaLabelSchema));
 
 export class ChatsResource extends BaseResource {
   /**
@@ -55,9 +67,20 @@ export class ChatsResource extends BaseResource {
       includeArchive,
       kinds,
       since,
+      engine,
+      engineId,
+      numberId,
+      phone,
+      fanoutLimit,
       ...listParams
     } = params;
-    const query = buildListQuery(listParams);
+    const query = addEngineTargetQuery(buildListQuery(listParams), {
+      engine,
+      engineId,
+      numberId,
+      phone,
+      fanoutLimit,
+    });
     if (searchToken !== undefined) query.searchToken = searchToken;
     if (filter !== undefined) query.filter = filter;
     if (includeLastMessage !== undefined) query.includeLastMessage = includeLastMessage;
@@ -98,8 +121,15 @@ export class ChatsResource extends BaseResource {
     chatId: string,
     params: ListParticipantsParams & { signal?: AbortSignal } = {},
   ): Promise<Page<Participant>> {
-    const { signal, searchToken, ...listParams } = params;
-    const query = buildListQuery(listParams);
+    const { signal, searchToken, engine, engineId, numberId, phone, fanoutLimit, ...listParams } =
+      params;
+    const query = addEngineTargetQuery(buildListQuery(listParams), {
+      engine,
+      engineId,
+      numberId,
+      phone,
+      fanoutLimit,
+    });
     if (searchToken !== undefined) query.searchToken = searchToken;
     return this.client.request({
       method: "GET",
@@ -147,6 +177,39 @@ export class ChatsResource extends BaseResource {
     return this.client.request({
       method: "POST",
       path: `/v1/chats/${encodeURIComponent(chatId)}/unarchive`,
+      schema: ChatMutationEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * List chat native labels.
+   *
+   * Return the native WhatsApp Business labels currently assigned to the chat. WhatsApp Business accounts only — a non-Business account returns an empty list. Requires `wa-labels:read`.
+   */
+  async listWaLabels(chatId: string, opts: { signal?: AbortSignal } = {}): Promise<WaLabel[]> {
+    return this.client.request({
+      method: "GET",
+      path: `/v1/chats/${encodeURIComponent(chatId)}/wa-labels`,
+      schema: WaLabelListEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Set chat native labels.
+   *
+   * Replace the chat's native WhatsApp Business label set with exactly `labelIds` (values from `wa-labels.list`). An empty array clears all labels. At most 20. Requires a WhatsApp Business account — a non-Business account returns 409 `wa_business_required`. Requires `wa-labels:write`.
+   */
+  async updateWaLabels(
+    chatId: string,
+    body: SetChatWaLabelsParams,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<ChatMutationResult> {
+    return this.client.request({
+      method: "PATCH",
+      path: `/v1/chats/${encodeURIComponent(chatId)}/wa-labels`,
+      body,
       schema: ChatMutationEnvelope,
       signal: opts.signal,
     });

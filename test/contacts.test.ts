@@ -78,3 +78,21 @@ describe("client.contacts.listCommonGroups", () => {
     expect(page.data[0]!.participantCount).toBe(5);
   });
 });
+
+describe("client.contacts.listCommonGroups (paging)", () => {
+  it("forwards limit and skip", async () => {
+    const c = new Blueticks({
+      apiKey: "bt_test_x",
+      baseUrl: "https://example.test",
+      fetch: mockFetch((req) => {
+        const url = new URL(req.url);
+        expect(url.searchParams.get("limit")).toBe("20");
+        expect(url.searchParams.get("skip")).toBe("40");
+        return jsonResponse(200, { success: true, data: [], limit: 20, skip: 40, total: 40, nextCursor: null });
+      }),
+    });
+    const page = await c.contacts.listCommonGroups("14155551234@c.us", { limit: 20, skip: 40 });
+    expect(page.skip).toBe(40);
+    expect(page.nextCursor).toBeNull();
+  });
+});

@@ -18,6 +18,8 @@ import { NewslettersResource } from "./resources/newsletters";
 import { RealtimeResource } from "./resources/realtime";
 import { ScheduledMessagesResource } from "./resources/scheduled-messages";
 import { SunoResource } from "./resources/suno";
+import { UploadsResource } from "./resources/uploads";
+import { WaLabelsResource } from "./resources/wa-labels";
 import type { Ping } from "./types/ping";
 
 const DEFAULT_BASE_URL = "https://api.blueticks.co";
@@ -50,6 +52,8 @@ export class Blueticks {
   readonly realtime: RealtimeResource;
   readonly scheduledMessages: ScheduledMessagesResource;
   readonly suno: SunoResource;
+  readonly uploads: UploadsResource;
+  readonly waLabels: WaLabelsResource;
   private readonly transport: Transport;
   readonly baseUrl: string;
 
@@ -91,6 +95,8 @@ export class Blueticks {
     this.realtime = new RealtimeResource(this);
     this.scheduledMessages = new ScheduledMessagesResource(this);
     this.suno = new SunoResource(this);
+    this.uploads = new UploadsResource(this);
+    this.waLabels = new WaLabelsResource(this);
   }
 
   async ping(opts: { signal?: AbortSignal } = {}): Promise<Ping> {

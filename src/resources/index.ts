@@ -26,6 +26,7 @@ export {
   ChatsResource,
   type ListChatsParams,
   type ListParticipantsParams,
+  type SetChatWaLabelsParams,
 } from "./chats";
 export { ContactsResource, type ListContactsParams } from "./contacts";
 export { EnginesResource } from "./engines";
@@ -52,6 +53,8 @@ export {
   type CreateNewsletterParams,
 } from "./newsletters";
 export { PingResource } from "./ping";
+export { UploadsResource, type CreateUploadParams } from "./uploads";
+export { WaLabelsResource } from "./wa-labels";
 export { RealtimeResource } from "./realtime";
 export {
   ScheduledMessagesResource,

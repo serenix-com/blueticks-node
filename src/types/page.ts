@@ -12,6 +12,18 @@ export function dataEnvelope<T extends ZodTypeAny>(item: T) {
 }
 
 /**
+ * Which WhatsApp engine answered a read, and the account number it is bound
+ * to. Present on list responses when the server includes it.
+ */
+export const AnsweredBySchema = z.object({
+  engineId: z.string(),
+  numberId: z.string().nullish(),
+  phoneNumber: z.string().nullish(),
+});
+
+export type AnsweredBy = z.infer<typeof AnsweredBySchema>;
+
+/**
  * Public offset-paginated list page. Every v1 list endpoint returns this
  * shape (after the `{ success, ... }` envelope is unwrapped). Iterate `data`
  * for the items on this page; advance by passing `skip: skip + limit` to the
@@ -25,6 +37,10 @@ export interface Page<T> {
   skip: number;
   /** Total number of items matching the query, across all pages. */
   total: number;
+  /** Engine + number that answered the read, when the server reports it. */
+  answeredBy?: AnsweredBy | null;
+  /** Token for the next page (equal to the next `skip`), or null on the last page. */
+  nextCursor?: string | null;
 }
 
 /**
@@ -39,15 +55,20 @@ export function pageSchema<T extends ZodTypeAny>(item: T) {
       limit: z.number().int(),
       skip: z.number().int(),
       total: z.number().int(),
+      answeredBy: AnsweredBySchema.nullish(),
+      nextCursor: z.string().nullish(),
     })
-    .transform(
-      (r): Page<z.infer<T>> => ({
+    .transform((r): Page<z.infer<T>> => {
+      const page: Page<z.infer<T>> = {
         data: r.data,
         limit: r.limit,
         skip: r.skip,
         total: r.total,
-      }),
-    );
+      };
+      if (r.answeredBy !== undefined) page.answeredBy = r.answeredBy;
+      if (r.nextCursor !== undefined) page.nextCursor = r.nextCursor;
+      return page;
+    });
 }
 
 /** Params accepted by every offset-paginated v1 list endpoint. */
@@ -58,6 +79,27 @@ export interface ListParams {
   limit?: number;
 }
 
+/** Which engine type a read is forced to. */
+export type EngineType = "gateway" | "regular";
+
+/** Selects the engine (or the account number) a read is answered from. */
+export interface EngineSelectorParams {
+  /** Force the read to a specific engine type: `gateway` (server-side, e.g. Baileys) or `regular` (browser extension). */
+  engine?: EngineType;
+  /** Exact engine clientId to target; wins over `engine`. */
+  engineId?: string;
+  /** Target the engine on one of this account's WhatsApp numbers (the Number id). */
+  numberId?: string;
+}
+
+/** Engine selection plus fan-out controls for reads that span all of an account's numbers. */
+export interface EngineTargetParams extends EngineSelectorParams {
+  /** Target one of this account's WhatsApp numbers by its E.164 phone. */
+  phone?: string;
+  /** With no number target, read at most this many of the account's numbers (default 5). */
+  fanoutLimit?: number;
+}
+
 export function buildListQuery(
   params: ListParams | undefined,
 ): Record<string, string | number | boolean | undefined> {
@@ -65,6 +107,19 @@ export function buildListQuery(
   if (params?.skip !== undefined) q.skip = params.skip;
   if (params?.limit !== undefined) q.limit = params.limit;
   return q;
+}
+
+/** Serialize the engine-selection params onto a query object (only the fields that are set). */
+export function addEngineTargetQuery(
+  query: Record<string, string | number | boolean | undefined>,
+  params: EngineTargetParams,
+): Record<string, string | number | boolean | undefined> {
+  if (params.engine !== undefined) query.engine = params.engine;
+  if (params.engineId !== undefined) query.engineId = params.engineId;
+  if (params.numberId !== undefined) query.numberId = params.numberId;
+  if (params.phone !== undefined) query.phone = params.phone;
+  if (params.fanoutLimit !== undefined) query.fanoutLimit = params.fanoutLimit;
+  return query;
 }
 
 /**

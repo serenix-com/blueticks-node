@@ -10,11 +10,13 @@ import {
   pageSchema,
   dataEnvelope,
   buildListQuery,
+  addEngineTargetQuery,
+  type EngineTargetParams,
   type Page,
   type ListParams,
 } from "../types/page";
 
-export interface ListGroupsParams extends ListParams {
+export interface ListGroupsParams extends ListParams, EngineTargetParams {
   searchToken?: string;
   includeArchive?: boolean;
 }
@@ -61,7 +63,7 @@ export class GroupsResource extends BaseResource {
     params: ListGroupsParams & { signal?: AbortSignal } = {},
   ): Promise<Page<GroupListItem>> {
     const { signal, searchToken, includeArchive, ...listParams } = params;
-    const query = buildListQuery(listParams);
+    const query = addEngineTargetQuery(buildListQuery(listParams), listParams);
     if (searchToken !== undefined) query.searchToken = searchToken;
     if (includeArchive !== undefined) query.includeArchive = includeArchive;
     return this.client.request({

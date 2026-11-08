@@ -4,6 +4,8 @@ import {
   type MessageResponse,
   type MediaKind,
   type MessageStatus,
+  type ButtonReplyParams,
+  type RecurrenceParams,
 } from "../types/scheduled-messages";
 import { DeletedResourceSchema, type DeletedResource } from "../types/deleted";
 import {
@@ -16,7 +18,19 @@ import {
 
 /** Flat body accepted by `POST /v1/scheduled-messages/{chatId}`. `type` selects which fields apply. */
 export interface SendMessageBody {
-  type: "text" | "media" | "poll";
+  /** Optional: omit it when sending a `buttonReply` or a media message identified by `mediaFileId`. */
+  type?: "text" | "media" | "poll";
+  /** Repeat the message on a schedule (requires `sendAt`). */
+  recurrence?: RecurrenceParams;
+  /** Native WhatsApp Business label ids to apply to the chat (at most 20). */
+  waLabelIds?: string[];
+  /** Answer a menu/button message. */
+  buttonReply?: ButtonReplyParams;
+  /** Sender number (E.164) to send from, when the account has several numbers. */
+  from?: string;
+  /** Id returned by `POST /v1/uploads`; send a file uploaded there. Pair with `mediaMimeType`. */
+  mediaFileId?: string;
+  mediaMimeType?: string;
   text?: string;
   replyTo?: string;
   mediaUrl?: string;
@@ -37,6 +51,8 @@ export interface SendMessageBody {
 /** Body accepted by `PATCH /v1/scheduled-messages/{id}` — same flat fields as send, all optional. */
 export interface UpdateScheduledMessageBody {
   type?: "text" | "media" | "poll";
+  mediaFileId?: string;
+  mediaMimeType?: string;
   text?: string;
   replyTo?: string;
   mediaUrl?: string;
@@ -55,6 +71,10 @@ export interface UpdateScheduledMessageBody {
 /** Optional filters accepted by `GET /v1/scheduled-messages`. */
 export interface ListScheduledMessagesParams extends ListParams {
   chatId?: string;
+  /** Include already-sent messages (default follows the server). */
+  includeSent?: boolean;
+  /** Include preview entries (default follows the server). */
+  includePreview?: boolean;
   searchToken?: string;
   status?: MessageStatus;
   order?: "asc" | "desc";
@@ -73,8 +93,11 @@ export class ScheduledMessagesResource extends BaseResource {
   async list(
     params: ListScheduledMessagesParams & { signal?: AbortSignal } = {},
   ): Promise<Page<MessageResponse>> {
-    const { signal, chatId, searchToken, status, order, ...listParams } = params;
+    const { signal, chatId, searchToken, status, order, includeSent, includePreview, ...listParams } =
+      params;
     const query = buildListQuery(listParams);
+    if (includeSent !== undefined) query.includeSent = includeSent;
+    if (includePreview !== undefined) query.includePreview = includePreview;
     if (chatId !== undefined) query.chatId = chatId;
     if (searchToken !== undefined) query.searchToken = searchToken;
     if (status !== undefined) query.status = status;
@@ -151,6 +174,20 @@ export class ScheduledMessagesResource extends BaseResource {
       method: "DELETE",
       path: `/v1/scheduled-messages/${encodeURIComponent(id)}`,
       schema: DeletedResourceEnvelope,
+      signal: opts.signal,
+    });
+  }
+
+  /**
+   * Cancel scheduled message.
+   *
+   * Cancel a pending scheduled message before it is sent. Returns the message as it now stands (its `status` and `failureReason` reflect the cancellation). Requires `messages:write`.
+   */
+  async cancel(id: string, opts: { signal?: AbortSignal } = {}): Promise<MessageResponse> {
+    return this.client.request({
+      method: "POST",
+      path: `/v1/scheduled-messages/${encodeURIComponent(id)}/cancel`,
+      schema: MessageResponseEnvelope,
       signal: opts.signal,
     });
   }

@@ -69,12 +69,10 @@ describe("client.identity.resolve", () => {
       expect(await req.json()).toEqual({ ids: ["120813554507870@lid", "120@g.us"] });
       return jsonResponse(200, {
         success: true,
-        data: {
-          data: [
-            IDENTITY,
-            { input: "120@g.us", resolved: true, canonical: "120@g.us", aliases: ["120@g.us"], type: "group", source: "cache" },
-          ],
-        },
+        data: [
+          IDENTITY,
+          { input: "120@g.us", resolved: true, canonical: "120@g.us", aliases: ["120@g.us"], type: "group", source: "cache" },
+        ],
       });
     });
     const res = await c.identity.resolve(["120813554507870@lid", "120@g.us"]);

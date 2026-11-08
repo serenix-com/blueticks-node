@@ -170,3 +170,23 @@ describe("client.groups members", () => {
     expect(await c.groups.removePicture("120@g.us")).toEqual({ ok: true });
   });
 });
+
+describe("client.groups.list (engine targeting)", () => {
+  it("forwards engine-target params and answeredBy", async () => {
+    const c = mkClient((req) => {
+      const url = new URL(req.url);
+      expect(url.searchParams.get("engine")).toBe("gateway");
+      expect(url.searchParams.get("fanoutLimit")).toBe("2");
+      return jsonResponse(200, {
+        success: true,
+        data: [{ id: "120@g.us", name: "Team", participantCount: 3 }],
+        limit: 50,
+        skip: 0,
+        total: 1,
+        answeredBy: { engineId: "eng_1" },
+      });
+    });
+    const page = await c.groups.list({ engine: "gateway", fanoutLimit: 2 });
+    expect(page.answeredBy?.engineId).toBe("eng_1");
+  });
+});

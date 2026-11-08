@@ -31,9 +31,16 @@ export const IdentitySchema = z.object({
 
 export type Identity = z.infer<typeof IdentitySchema>;
 
-/** Response of `POST /v1/identity/resolve` (one entry per input id, in order). */
-export const ResolveIdentitiesResultSchema = z.object({
-  data: z.array(IdentitySchema),
-});
+/**
+ * Response of `POST /v1/identity/resolve` (one entry per input id, in order).
+ * The wire `data` is the array itself; it is surfaced as `{ data }` so the
+ * public result shape is unchanged.
+ */
+export const ResolveIdentitiesResultSchema = z
+  .object({
+    success: z.literal(true),
+    data: z.array(IdentitySchema),
+  })
+  .transform((r) => ({ data: r.data }));
 
 export type ResolveIdentitiesResult = z.infer<typeof ResolveIdentitiesResultSchema>;
